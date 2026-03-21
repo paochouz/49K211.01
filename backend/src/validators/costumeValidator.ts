@@ -1,16 +1,19 @@
 import type { NextFunction, Request, Response } from "express";
 
 export function validateCreateCostume(req: Request, res: Response, next: NextFunction) {
-  const { name, pricePerDay } = req.body as { name?: unknown; pricePerDay?: unknown };
+  const { tenTP, loaiTP, giaThue } = req.body;
 
-  if (typeof name !== "string" || name.trim().length === 0) {
-    return res.status(400).json({ message: "name is required" });
+  if (!tenTP || typeof tenTP !== "string") {
+    return res.status(400).json({ message: "tenTP is required" });
   }
 
-  if (typeof pricePerDay !== "number" || !Number.isFinite(pricePerDay) || pricePerDay < 0) {
-    return res.status(400).json({ message: "pricePerDay must be a non-negative number" });
+  if (!loaiTP || typeof loaiTP !== "string") {
+    return res.status(400).json({ message: "loaiTP is required" });
   }
 
-  return next();
+  if (typeof giaThue !== "number" || giaThue <= 0) {
+    return res.status(400).json({ message: "giaThue must be > 0" });
+  }
+
+  next();
 }
-
