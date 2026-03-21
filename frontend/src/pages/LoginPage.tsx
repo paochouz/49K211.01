@@ -35,9 +35,6 @@ export default function LoginPage() {
       setLoading(true);
       const data = await api.loginApi(taiKhoan.trim(), matKhau);
       localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("userRole", data.user.vaiTro); 
-      localStorage.setItem("username", taiKhoan.trim());
-      window.location.href = "/dashboard";
       setMessage(`Đăng nhập thành công - ${data.user.vaiTro}`);
     } catch (error) {
       console.log(error);
