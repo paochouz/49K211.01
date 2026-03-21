@@ -106,7 +106,9 @@ export default function CostumeCreatePage() {
 
         {/* Tên */}
         <div style={styles.group}>
-          <label style={styles.label}>Tên trang phục *</label>
+          <label style={styles.label}>
+            Tên trang phục <span style={{ color: "#EF4444" }}>*</span>
+          </label>
           <input
             name="tenTP"
             value={form.tenTP}
@@ -118,18 +120,29 @@ export default function CostumeCreatePage() {
 
         {/* Loại */}
         <div style={styles.group}>
-          <label style={styles.label}>Loại trang phục *</label>
-          <input
+          <label style={styles.label}>
+            Loại trang phục <span style={{ color: "#EF4444" }}>*</span>
+          </label>
+          <select
             name="loaiTP"
             value={form.loaiTP}
             onChange={handleChange}
             style={styles.input}
-          />
+          >
+            <option value="">Chọn loại trang phục</option>
+            <option value="Váy dạ hội">Váy dạ hội</option>
+            <option value="Áo dài">Áo dài</option>
+            <option value="Vest">Vest</option>
+            <option value="Cách tân">Cách tân</option>
+            <option value="Cosplay">Cosplay</option>
+          </select>
         </div>
 
         {/* Giá */}
         <div style={styles.group}>
-          <label style={styles.label}>Giá thuê *</label>
+          <label style={styles.label}>
+            Giá thuê <span style={{ color: "#EF4444" }}>*</span>
+          </label>
           <input
             name="giaThue"
             type="number"
@@ -155,6 +168,8 @@ export default function CostumeCreatePage() {
             <option value="S">S</option>
             <option value="M">M</option>
             <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
           </select>
         </div>
 
