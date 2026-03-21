@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import app from "./app";
 import { connectDb } from "./config/db";
 
@@ -14,5 +16,6 @@ async function startServer() {
     console.error("Cannot start server:", error);
   }
 }
+console.log("DB_USER:", process.env.DB_USER);
 
 startServer();
