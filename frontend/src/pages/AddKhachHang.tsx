@@ -63,28 +63,20 @@ export default function AddKhachHang() {
   };
 
   return (
-    <div style={{ padding: 24, background: "#F8FAFC", minHeight: "100vh" }}>
-      <h2 style={{ fontSize: 22, marginBottom: 16 }}>Thêm khách hàng</h2>
+    <div style={containerStyle}>
+      <div style={cardStyle}>
+        <h2 style={titleStyle}>Thêm khách hàng</h2>
 
-      <div
-        style={{
-          background: "#fff",
-          padding: 24,
-          borderRadius: 12,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          maxWidth: 500,
-        }}
-      >
         <form onSubmit={handleSubmit}>
           {/* Mã KH */}
-          <div style={{ marginBottom: 16 }}>
-            <label>Mã khách hàng</label>
+          <div style={groupStyle}>
+            <label style={labelStyle}>Mã khách hàng</label>
             <input value={form.maKH} disabled style={inputStyle} />
           </div>
 
-          {/* Tên KH */}
-          <div style={{ marginBottom: 16 }}>
-            <label>Tên khách hàng *</label>
+          {/* Tên */}
+          <div style={groupStyle}>
+            <label style={labelStyle}>Tên khách hàng *</label>
             <input
               name="tenKH"
               value={form.tenKH}
@@ -95,8 +87,8 @@ export default function AddKhachHang() {
           </div>
 
           {/* SĐT */}
-          <div style={{ marginBottom: 16 }}>
-            <label>Số điện thoại *</label>
+          <div style={groupStyle}>
+            <label style={labelStyle}>Số điện thoại *</label>
             <input
               name="soDienThoai"
               value={form.soDienThoai}
@@ -107,8 +99,8 @@ export default function AddKhachHang() {
           </div>
 
           {/* Địa chỉ */}
-          <div style={{ marginBottom: 16 }}>
-            <label>Địa chỉ</label>
+          <div style={groupStyle}>
+            <label style={labelStyle}>Địa chỉ</label>
             <input
               name="diaChi"
               value={form.diaChi}
@@ -119,30 +111,13 @@ export default function AddKhachHang() {
           </div>
 
           {/* Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              background: "#2563EB",
-              color: "#fff",
-              border: "none",
-              padding: "10px 16px",
-              borderRadius: 8,
-              cursor: "pointer",
-              width: "100%",
-            }}
-          >
+          <button type="submit" disabled={loading} style={buttonStyle}>
             {loading ? "Đang lưu..." : "Lưu"}
           </button>
 
           {/* Message */}
           {message && (
-            <p
-              style={{
-                marginTop: 12,
-                color: isError ? "#EF4444" : "#22C55E",
-              }}
-            >
+            <p style={{ ...messageStyle, color: isError ? "#EF4444" : "#22C55E" }}>
               {message}
             </p>
           )}
@@ -152,11 +127,66 @@ export default function AddKhachHang() {
   );
 }
 
+/* ================= STYLE ================= */
+
+const containerStyle: React.CSSProperties = {
+  minHeight: "100vh",
+  background: "#F1F5F9",
+  display: "flex",
+  justifyContent: "center", // căn giữa ngang
+  alignItems: "flex-start", // 👈 đẩy lên trên
+  paddingTop: 40,           // 👈 tạo khoảng cách phía trên
+};
+
+const cardStyle: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 420, // 👈 nhỏ lại giống hình bạn
+  background: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
+};
+
+const titleStyle: React.CSSProperties = {
+  fontSize: 18,
+  fontWeight: 600,
+  marginBottom: 16,
+};
+
+const groupStyle: React.CSSProperties = {
+  marginBottom: 12,
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 500,
+  color: "#334155",
+};
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  height: 40,
-  border: "1px solid #E5E7EB",
+  height: 36,
+  border: "1px solid #E2E8F0",
   borderRadius: 8,
-  padding: "0 12px",
+  padding: "0 10px",
   marginTop: 4,
+  outline: "none",
+  fontSize: 14,
+};
+
+const buttonStyle: React.CSSProperties = {
+  width: "100%",
+  height: 38,
+  background: "#2563EB",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  fontWeight: 500,
+  cursor: "pointer",
+  marginTop: 8,
+};
+
+const messageStyle: React.CSSProperties = {
+  marginTop: 10,
+  fontSize: 13,
 };
