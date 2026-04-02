@@ -1,5 +1,4 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
 
 type Customer = {
   maKH: string;
@@ -19,6 +18,16 @@ const seedCustomers: Customer[] = [
 export default function ManageCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>(seedCustomers);
   const [keyword, setKeyword] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState<Customer>({
+    maKH: "",
+    tenKH: "",
+    soDienThoai: "",
+    diaChi: "",
+  });
+  const [formMessage, setFormMessage] = useState("");
+  const [isFormError, setIsFormError] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const filteredCustomers = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -36,6 +45,40 @@ export default function ManageCustomersPage() {
     if (window.confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) {
       setCustomers((prev) => prev.filter((item) => item.maKH !== maKH));
     }
+  };
+
+  const openAddModal = () => {
+    setFormMessage("");
+    setIsFormError(false);
+    setIsSaving(false);
+    setNewCustomer({
+      maKH: "KH" + Date.now().toString().slice(-6),
+      tenKH: "",
+      soDienThoai: "",
+      diaChi: "",
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleCreateCustomer = () => {
+    if (!newCustomer.tenKH.trim()) {
+      setIsFormError(true);
+      setFormMessage("Tên khách hàng không được để trống");
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(newCustomer.soDienThoai)) {
+      setIsFormError(true);
+      setFormMessage("SĐT phải đủ 10 số");
+      return;
+    }
+
+    setIsSaving(true);
+    setTimeout(() => {
+      setCustomers((prev) => [newCustomer, ...prev]);
+      setIsSaving(false);
+      setIsAddModalOpen(false);
+    }, 300);
   };
 
   return (
@@ -81,7 +124,9 @@ export default function ManageCustomersPage() {
       <main style={contentStyle}>
         <div style={headerActionStyle}>
           <h2 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#1e293b' }}>Quản lý khách hàng</h2>
-          <Link to="/add-khach-hang" style={primaryButtonStyle}>+ Thêm khách hàng</Link>
+          <button type="button" style={primaryButtonStyle} onClick={openAddModal}>
+            + Thêm khách hàng
+          </button>
         </div>
 
         <div style={statsGridStyle}>
@@ -138,6 +183,71 @@ export default function ManageCustomersPage() {
           </div>
         </div>
       </main>
+
+      {isAddModalOpen && (
+        <div style={modalOverlayStyle} onMouseDown={() => setIsAddModalOpen(false)}>
+          <div style={modalCardStyle} onMouseDown={(e) => e.stopPropagation()}>
+            <div style={modalHeaderStyle}>
+              <h3 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#1e293b" }}>Thêm khách hàng</h3>
+            </div>
+
+            <div style={groupStyle}>
+              <label style={labelStyle}>Mã khách hàng</label>
+              <input value={newCustomer.maKH} disabled style={modalInputStyle} />
+            </div>
+
+            <div style={groupStyle}>
+              <label style={labelStyle}>Tên khách hàng *</label>
+              <input
+                value={newCustomer.tenKH}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, tenKH: e.target.value }))}
+                placeholder="Nhập tên"
+                style={modalInputStyle}
+              />
+            </div>
+
+            <div style={groupStyle}>
+              <label style={labelStyle}>Số điện thoại *</label>
+              <input
+                value={newCustomer.soDienThoai}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, soDienThoai: e.target.value }))}
+                placeholder="Nhập số điện thoại"
+                style={modalInputStyle}
+              />
+            </div>
+
+            <div style={groupStyle}>
+              <label style={labelStyle}>Địa chỉ</label>
+              <input
+                value={newCustomer.diaChi}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, diaChi: e.target.value }))}
+                placeholder="Nhập địa chỉ"
+                style={modalInputStyle}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button type="button" style={secondaryButtonStyle} onClick={() => setIsAddModalOpen(false)}>
+                Đóng
+              </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                style={{ ...modalSaveButtonStyle, opacity: isSaving ? 0.7 : 1 }}
+                onClick={handleCreateCustomer}
+              >
+                {isSaving ? "Đang lưu..." : "Lưu"}
+              </button>
+            </div>
+
+            {formMessage && (
+              <p style={{ marginTop: 10, marginBottom: 0, fontSize: 13, color: isFormError ? "#ef4444" : "#22c55e" }}>
+                {formMessage}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -163,7 +273,7 @@ const brandIconWrapper: CSSProperties = { width: 40, height: 40, background: "#4
 const brandNameStyle: CSSProperties = { fontSize: 19, fontWeight: 700, color: "#1e293b" };
 const contentStyle: CSSProperties = { padding: "40px" };
 const headerActionStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 };
-const primaryButtonStyle: CSSProperties = { background: "#4361EE", color: "#fff", padding: "12px 24px", borderRadius: "12px", textDecoration: "none", fontWeight: 600, fontSize: 14 };
+const primaryButtonStyle: CSSProperties = { background: "#4361EE", color: "#fff", padding: "12px 24px", borderRadius: "12px", border: "none", fontWeight: 600, fontSize: 14, cursor: "pointer" };
 const statsGridStyle: CSSProperties = { marginBottom: 32 };
 const statCardStyle: CSSProperties = { background: "#fff", padding: "20px", borderRadius: "20px", display: "inline-flex", alignItems: "center", gap: 16, minWidth: "240px", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" };
 const iconBoxStyle: CSSProperties = { width: 52, height: 52, backgroundColor: "#f0f3ff", borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 };
@@ -194,4 +304,66 @@ const logoutButtonStyle: CSSProperties = {
   fontWeight: 600, // Làm đậm chữ một chút để nổi bật
   transition: "all 0.2s ease",
   borderRadius: "12px",
+};
+
+const modalOverlayStyle: CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(15, 23, 42, 0.5)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 16,
+  zIndex: 100,
+};
+
+const modalCardStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: 640,
+  background: "#f8fafc",
+  borderRadius: 16,
+  padding: 16,
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 18px 48px rgba(0,0,0,0.18)",
+};
+
+const modalHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: 12,
+};
+
+const groupStyle: CSSProperties = { marginBottom: 12 };
+const labelStyle: CSSProperties = { fontSize: 13, fontWeight: 600, color: "#334155" };
+const modalInputStyle: CSSProperties = {
+  width: "100%",
+  height: 40,
+  border: "1px solid #cbd5e1",
+  borderRadius: 10,
+  padding: "0 12px",
+  marginTop: 6,
+  outline: "none",
+  fontSize: 14,
+  background: "#fff",
+};
+const secondaryButtonStyle: CSSProperties = {
+  flex: 1,
+  height: 42,
+  borderRadius: 10,
+  border: "1px solid #c7d2fe",
+  background: "#e9edff",
+  color: "#1d4ed8",
+  fontWeight: 700,
+  cursor: "pointer",
+};
+const modalSaveButtonStyle: CSSProperties = {
+  flex: 1,
+  height: 42,
+  borderRadius: 10,
+  border: "none",
+  background: "#3065dd",
+  color: "#fff",
+  fontWeight: 700,
+  cursor: "pointer",
 };

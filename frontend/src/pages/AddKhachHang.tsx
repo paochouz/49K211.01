@@ -183,7 +183,7 @@ const buttonStyle: React.CSSProperties = {
   borderRadius: 8,
   fontWeight: 500,
   cursor: "pointer",
-  marginTop: 8,
+  marginTop: 16,
 };
 
 const messageStyle: React.CSSProperties = {
