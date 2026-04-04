@@ -1,14 +1,14 @@
 import type { NextFunction, Request, Response } from "express";
 
 export function validateCreateCustomer(req: Request, res: Response, next: NextFunction) {
-  const { name, phone } = req.body as { name?: unknown; phone?: unknown };
+const { tenKH, soDienThoai } = req.body as { tenKH?: unknown; soDienThoai?: unknown };
 
-  if (typeof name !== "string" || name.trim().length === 0) {
-    return res.status(400).json({ message: "name is required" });
+if (typeof tenKH !== "string" || tenKH.trim().length === 0) {
+return res.status(400).json({ message: "Tên khách hàng bắt buộc" });
   }
 
-  if (typeof phone !== "string" || phone.trim().length === 0) {
-    return res.status(400).json({ message: "phone is required" });
+if (typeof soDienThoai !== "string" || soDienThoai.trim().length === 0 || !/^\d{10}$/.test(soDienThoai)) {
+return res.status(400).json({ message: "SĐT phải đúng 10 số" });
   }
 
   return next();
