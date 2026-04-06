@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import axios from "axios";
 
 type Customer = {
   maKH: string;
@@ -23,7 +24,7 @@ type RentItem = {
   ngayTra: string; // yyyy-mm-dd
 };
 
-type DepositMethod = "GIAY_TO" | "TIEN_MAT_CHUYEN_KHOAN";
+type DepositMethod = "GiayTo" | "Tien";
 
 const STORAGE_KEYS = {
   lastInvoiceNumber: "HDT_LAST_NUMBER",
@@ -303,7 +304,7 @@ export default function AddDonThue() {
     maDon: "",
     invoiceNumber: 0,
     khachHang: undefined,
-    hinhThucCoc: "TIEN_MAT_CHUYEN_KHOAN",
+    hinhThucCoc: "Tien",
     tienCoc: 0,
     trangThai: "Chưa cọc đơn",
     ghiChuGiayTo: "",
@@ -355,7 +356,7 @@ export default function AddDonThue() {
 
   // Tự động tiền cọc theo hình thức (nhưng vẫn cho chỉnh sửa với tiền mặt/chuyển khoản)
   useEffect(() => {
-    if (form.hinhThucCoc === "GIAY_TO") {
+    if (form.hinhThucCoc === "GiayTo") {
       if (form.tienCoc !== 0 || tienCocTouched) {
         setForm((prev) => ({ ...prev, tienCoc: 0 }));
         setTienCocTouched(false);
@@ -440,7 +441,7 @@ export default function AddDonThue() {
     setIsCostumeModalOpenFor(null);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setMessage("");
     setIsError(false);
@@ -464,31 +465,76 @@ export default function AddDonThue() {
       return;
     }
 
-    if (form.hinhThucCoc === "GIAY_TO" && !form.ghiChuGiayTo.trim()) {
+    if (form.hinhThucCoc === "GiayTo" && !form.ghiChuGiayTo.trim()) {
       setIsError(true);
       setMessage("Vui lòng nhập ghi chú giấy tờ");
       return;
     }
 
-    // Lưu số hóa đơn lớn nhất
-    localStorage.setItem(STORAGE_KEYS.lastInvoiceNumber, String(form.invoiceNumber));
+    try {
+        // Đảm bảo các giá trị String khớp chính xác với CHECK trong SQL của Hiền
+        const payload = {
+            // --- BẢNG DONTHUE ---
+            MaDon: form.maDon, 
+            MaKH: form.khachHang.maKH, // Phải là mã 'KH000101'
+            TaiKhoanNhanVien: "NV1", // 
+            HinhThucCoc: form.hinhThucCoc,
+            TienCoc: Number(form.tienCoc),
+            GhiChuGiayTo: form.ghiChuGiayTo || "",
+            TongTienThue: Number(derived.tongDonThue),
+            PhiTraTre: 0,
+            TongPhatSinh: 0,
+            TienPhaiThuTra: Number(derived.tongDonThue) - Number(form.tienCoc),
+            TrangThaiDon: "Chua coc", // SQL chỉ nhận 'Chua coc' (không dấu)
+            
+            // --- BẢNG CHITIETDONTHUE ---
+            Items: items.map(it => ({
+                MaTP: it.costumeId, // Phải là mã 'TP000001'
+                NgayThue: new Date().toISOString().split('T')[0], // Định dạng YYYY-MM-DD
+                NgayTraDuKien: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString().split('T')[0],
+                TrangThaiTra: "Binh thuong", // SQL chỉ nhận 'Binh thuong'
+                PhiHuHong: 0
+            }))
+        };
 
-    // demo submit
-    console.log({
-      form: {
-        ...form,
-        khachHang: form.khachHang
-          ? `${form.khachHang.tenKH} – ${form.khachHang.soDienThoai}`
-          : "",
-      },
-      items,
-      tongDonThue: derived.tongDonThue,
-      phiTraTre: derived.phiTraTre,
-      tienPhaiTra: derived.tienPhaiTra,
-    });
+        // Địa chỉ gọi API đã khớp với cổng 3002 bạn đang chạy
+        const response = await axios.post('http://localhost:3002/api/don-thue', payload);
+        
+        if (response.status === 200 || response.status === 201) {
+            setMessage("Lưu thành công rồi!");
+            setIsError(false);
+        
+            // 1. Lấy số hiện tại và tăng lên 1
+            const nextNumber = form.invoiceNumber + 1; 
+        
+            // 2. Lưu số MỚI này vào localStorage ngay lập tức để lần sau F5 vẫn nhớ
+            localStorage.setItem(STORAGE_KEYS.lastInvoiceNumber, nextNumber.toString());
+        
+            // 3. Cập nhật giao diện để hiện mã đơn mới (ví dụ HDT000009)
+            setTimeout(() => {
+                setForm(prev => ({
+                    ...prev,
+                    invoiceNumber: nextNumber,
+                    maDon: formatInvoice(nextNumber),
+                    // Reset các trường khác nếu bạn muốn làm đơn mới luôn
+                    khachHang: undefined,
+                    tienCoc: 0,
+                    ghiChuGiayTo: ""
+                }));
+                setItems([]); // Xóa danh sách đồ đã chọn để làm đơn mới
+                setMessage(""); 
+            }, 3600); // Đợi 1phuts  thấy chữ "Thành công"
+        }
+        
+    } catch (error: any) {
+        setIsError(true);
+        // Hiển thị lỗi từ SQL để biết sai ở cột nào
+        const sqlError = error.response?.data?.message || "Lỗi dữ liệu SQL (Check khóa ngoại/Tiếng Việt)";
+        setMessage(sqlError);
+        console.error("Lỗi chi tiết:", error.response?.data);
+    }
+};
 
-    setMessage("Tạo đơn thành công!");
-  };
 
   return (
     <div style={containerStyle}>
@@ -520,18 +566,18 @@ export default function AddDonThue() {
               <label style={radioLabelStyle}>
                 <input
                   type="radio"
-                  value="GIAY_TO"
-                  checked={form.hinhThucCoc === "GIAY_TO"}
-                  onChange={() => setForm((p) => ({ ...p, hinhThucCoc: "GIAY_TO" }))}
+                  value="GiayTo"
+                  checked={form.hinhThucCoc === "GiayTo"}
+                  onChange={() => setForm((p) => ({ ...p, hinhThucCoc: "GiayTo" }))}
                 />
                 Giấy tờ tùy thân
               </label>
               <label style={radioLabelStyle}>
                 <input
                   type="radio"
-                  value="TIEN_MAT_CHUYEN_KHOAN"
-                  checked={form.hinhThucCoc === "TIEN_MAT_CHUYEN_KHOAN"}
-                  onChange={() => setForm((p) => ({ ...p, hinhThucCoc: "TIEN_MAT_CHUYEN_KHOAN" }))}
+                  value="Tien"
+                  checked={form.hinhThucCoc === "Tien"}
+                  onChange={() => setForm((p) => ({ ...p, hinhThucCoc: "Tien" }))}
                 />
                 Tiền mặt/chuyển khoản
               </label>
@@ -659,7 +705,7 @@ export default function AddDonThue() {
             <input
               type="number"
               value={form.tienCoc}
-              disabled={form.hinhThucCoc === "GIAY_TO"}
+              disabled={form.hinhThucCoc === "GiayTo"}
               onChange={(e) => {
                 setTienCocTouched(true);
                 setForm((p) => ({ ...p, tienCoc: Number(e.target.value) || 0 }));
@@ -689,7 +735,7 @@ export default function AddDonThue() {
             <label style={labelStyle}>Ghi chú giấy tờ</label>
             <input
               placeholder='Ví dụ: "CCCD số 123456"'
-              disabled={form.hinhThucCoc !== "GIAY_TO"}
+              disabled={form.hinhThucCoc !== "GiayTo"}
               value={form.ghiChuGiayTo}
               onChange={(e) => setForm((p) => ({ ...p, ghiChuGiayTo: e.target.value }))}
               style={inputStyle}
@@ -811,12 +857,13 @@ export default function AddDonThue() {
                       type="button"
                       disabled={customerCreateLoading}
                       style={{ ...primaryButtonStyle, flex: 1, marginTop: 0, opacity: customerCreateLoading ? 0.7 : 1 }}
-                      onClick={() => {
+                      onClick={async () => {
                         setCustomerCreateMessage("");
                         setCustomerCreateIsError(false);
 
                         const tenKH = newCustomer.tenKH.trim();
                         const soDienThoai = newCustomer.soDienThoai.trim();
+                        const diaChi = newCustomer.diaChi.trim();
 
                         if (!tenKH) {
                           setCustomerCreateIsError(true);
@@ -831,18 +878,35 @@ export default function AddDonThue() {
                         }
 
                         setCustomerCreateLoading(true);
-                        setTimeout(() => {
-                          const created: Customer = { maKH: newCustomer.maKH || generateCustomerId(), tenKH, soDienThoai };
-                          setCustomers((prev) => [created, ...prev]);
-                          setForm((p) => ({ ...p, khachHang: created }));
-
-                          setCustomerCreateLoading(false);
-                          setIsCustomerModalOpen(false);
-                          setCustomerMode("SELECT");
-                          setCustomerCreateMessage("");
-                          setCustomerCreateIsError(false);
-                        }, 300);
-                      }}
+                        try {
+                            const response = await axios.post('http://localhost:3002/api/khach-hang/don-thue', {
+                                MaKH: newCustomer.maKH,
+                                TenKH: tenKH,
+                                SoDienThoai: soDienThoai,
+                                DiaChi: diaChi
+                            });
+                        
+                            if (response.status === 201) {
+                                const added = { 
+                                    maKH: newCustomer.maKH, 
+                                    tenKH: tenKH, 
+                                    soDienThoai: soDienThoai, 
+                                    diaChi: diaChi 
+                                }; 
+                                
+                                setCustomers(prev => [...prev, added]);
+                                setForm(prev => ({ ...prev, khachHang: added }));
+                                setIsCustomerModalOpen(false);
+                                setCustomerMode("SELECT");
+                                setCustomerCreateMessage(""); // Xóa thông báo lỗi cũ nếu có
+                            }
+                        } catch (err: any) {
+                            setCustomerCreateIsError(true);
+                            setCustomerCreateMessage(err.response?.data?.message || "Lỗi khi lưu khách hàng");
+                        } finally {
+                            // Phải có dòng này để nút "Lưu" sáng lại dù thành công hay thất bại
+                            setCustomerCreateLoading(false);
+                        }}}
                     >
                       {customerCreateLoading ? "Đang lưu..." : "Lưu"}
                     </button>
