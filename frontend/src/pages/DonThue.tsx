@@ -85,7 +85,6 @@ export default function RentalOrdersPage() {
     setPopupMessage(message);
     setIsPopupOpen(true);
   };
-  const [editingOrder, setEditingOrder] = useState<OrderItem | null>(null);
 
   const stats = useMemo(() => {
     return {
@@ -161,18 +160,6 @@ export default function RentalOrdersPage() {
     showPopup(`Hóa đơn ${invoiceNo} đã chuyển sang trạng thái "Đang thuê".`);
   };
 
-  const handleSaveEdit = () => {
-    if (!editingOrder) return;
-
-    const updated = orders.map((order) =>
-      order.invoiceNo === editingOrder.invoiceNo ? editingOrder : order,
-    );
-
-    setOrders(updated);
-    setFilteredOrders(updated);
-    setEditingOrder(null);
-    showPopup(`Đã cập nhật hóa đơn ${editingOrder.invoiceNo}.`);
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -189,30 +176,14 @@ export default function RentalOrdersPage() {
       </aside>
 
       <main className="ml-[220px] p-6 space-y-6">
-        <section className="rounded-3xl bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Xem hóa đơn</h1>
-              <p className="text-sm text-slate-500">
-                Người dùng có thể xem và lọc hóa đơn sau khi đăng nhập.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                className="rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white"
-              >
-                Xem hóa đơn
-              </button>
-              <button
-                type="button"
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
-              >
-                Lọc hóa đơn
-              </button>
-            </div>
-          </div>
+        <section className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold text-slate-900">Xem hóa đơn</h1>
+          <button
+            type="button"
+            className="rounded-2xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-indigo-700"
+          >
+            + Tạo đơn thuê
+          </button>
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -299,14 +270,6 @@ export default function RentalOrdersPage() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled
-                    className="cursor-not-allowed rounded-xl bg-slate-200 px-3 py-2 text-xs font-medium text-slate-500"
-                  >
-                    Hóa đơn
-                  </button>
-
-                  <button
-                    type="button"
                     disabled={order.status !== 'Chưa cọc đơn'}
                     onClick={() => handleDeposit(order.invoiceNo)}
                     className={`rounded-xl px-3 py-2 text-xs font-medium ${
@@ -317,10 +280,19 @@ export default function RentalOrdersPage() {
                   >
                     Đã cọc
                   </button>
-
                   <button
                     type="button"
-                    onClick={() => setEditingOrder(order)}
+                    disabled={order.status !== 'Đang thuê' && order.status !== 'Trễ hạn'}
+                    className={`rounded-xl px-3 py-2 text-xs font-medium ${
+                      order.status === 'Đang thuê' || order.status === 'Trễ hạn'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'cursor-not-allowed bg-slate-200 text-slate-400'
+                    }`}
+                  >
+                    Trả đồ
+                  </button>
+                  <button
+                    type="button"
                     className="rounded-xl bg-amber-100 px-3 py-2 text-xs font-medium text-amber-700"
                   >
                     Chỉnh sửa
@@ -354,88 +326,6 @@ export default function RentalOrdersPage() {
                 className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white"
               >
                 OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {editingOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold">Chỉnh sửa hóa đơn</h3>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <input
-                value={editingOrder.customer}
-                onChange={(e) =>
-                  setEditingOrder({ ...editingOrder, customer: e.target.value })
-                }
-                placeholder="Tên khách hàng"
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
-              />
-
-              <input
-                value={editingOrder.phone}
-                onChange={(e) =>
-                  setEditingOrder({
-                    ...editingOrder,
-                    phone: e.target.value.replace(/\D/g, '').slice(0, 10),
-                  })
-                }
-                placeholder="Số điện thoại"
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
-              />
-
-              <input
-                value={editingOrder.item}
-                onChange={(e) =>
-                  setEditingOrder({ ...editingOrder, item: e.target.value })
-                }
-                placeholder="Trang phục"
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm md:col-span-2"
-              />
-
-              <select
-                value={editingOrder.status}
-                onChange={(e) =>
-                  setEditingOrder({
-                    ...editingOrder,
-                    status: e.target.value as OrderStatus,
-                  })
-                }
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
-              >
-                <option value="Chưa cọc đơn">Chưa cọc đơn</option>
-                <option value="Đang thuê">Đang thuê</option>
-                <option value="Đã trả">Đã trả</option>
-                <option value="Trễ hạn">Trễ hạn</option>
-              </select>
-
-              <input
-                value={editingOrder.dueDate}
-                onChange={(e) =>
-                  setEditingOrder({ ...editingOrder, dueDate: e.target.value })
-                }
-                placeholder="Hạn trả"
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm"
-              />
-            </div>
-            
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setEditingOrder(null)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEdit}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white"
-              >
-                Lưu
               </button>
             </div>
           </div>
