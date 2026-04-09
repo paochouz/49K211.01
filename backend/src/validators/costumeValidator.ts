@@ -36,20 +36,20 @@ export function validateCreateCostume(
   const trangThai = pickString(req.body.trangThai, req.body.status);
 
   if (!tenTP || tenTP.trim().length === 0) {
-    return res.status(400).json({ message: "Ten trang phuc la bat buoc." });
+    return res.status(400).json({ message: "Tên trang phục là bắt buộc." });
   }
 
   if (!loaiTP || loaiTP.trim().length === 0) {
-    return res.status(400).json({ message: "Loai trang phuc la bat buoc." });
+    return res.status(400).json({ message: "Loại trang phục là bắt buộc." });
   }
 
   const price = parsePrice(giaThue);
   if (!Number.isFinite(price) || price <= 0) {
-    return res.status(400).json({ message: "Gia thue phai lon hon 0." });
+    return res.status(400).json({ message: "Giá thuê phải lớn hơn 0." });
   }
 
   if (trangThai !== undefined && !ALLOWED_STATUSES.has(trangThai.trim())) {
-    return res.status(400).json({ message: "Trang thai trang phuc khong hop le." });
+    return res.status(400).json({ message: "Trạng thái trang phục không hợp lệ." });
   }
 
   return next();
@@ -66,18 +66,18 @@ export function validateUpdateCostume(
   const trangThai = pickString(req.body.trangThai, req.body.status);
 
   if (tenTP !== undefined && tenTP.trim().length === 0) {
-    return res.status(400).json({ message: "Ten trang phuc khong hop le." });
+    return res.status(400).json({ message: "Tên trang phục không hợp lệ." });
   }
 
   if (giaThue !== undefined && giaThue !== "") {
     const price = parsePrice(giaThue);
     if (!Number.isFinite(price) || price <= 0) {
-      return res.status(400).json({ message: "Gia thue phai lon hon 0." });
+      return res.status(400).json({ message: "Giá thuê phải lớn hơn 0." });
     }
   }
 
   if (trangThai !== undefined && !ALLOWED_STATUSES.has(trangThai.trim())) {
-    return res.status(400).json({ message: "Trang thai trang phuc khong hop le." });
+    return res.status(400).json({ message: "Trạng thái trang phục không hợp lệ." });
   }
 
   return next();
