@@ -27,6 +27,7 @@ const statusColor: Record<StatusValue, string> = {
   [STATUS.BROKEN]: "#EF4444",
 };
 
+// Đã cập nhật lại danh sách Menu cho khớp màn quản lý khách hàng
 const sidebarMenu = [
   {
     label: "Trang chủ",
@@ -42,7 +43,7 @@ const sidebarMenu = [
   },
   {
     label: "Quản lý đơn thuê",
-    path: "/rentals",
+    path: "/tra-do",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
@@ -56,7 +57,7 @@ const sidebarMenu = [
   },
   {
     label: "Quản lý khách hàng",
-    path: "/customers/create",
+    path: "/quan-ly-khach-hang",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -77,7 +78,7 @@ const sidebarMenu = [
   },
   {
     label: "Cấu hình phạt",
-    path: "/settings",
+    path: "/admin/cau-hinh-phat",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
@@ -96,30 +97,20 @@ export default function CostumeListPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Gọi API từ Backend chạy ở port 3003
   useEffect(() => {
     fetch("http://localhost:3003/api/costume-list") 
       .then((res) => res.json())
       .then((data) => {
-        // CHUẨN HÓA DỮ LIỆU: Đọc đúng tên cột thô từ Database SQL Server
         const mappedData = data.map((item: any) => ({
-  id: item.MaTP,
-  name: item.TenTP,
-  price: item.GiaThue,
-  size: item.MoTa 
-  ? `${item.Size} - ${item.MoTa}` 
-  : item.Size,
-  status:
-    item.TrangThai === "Dang thue"
-      ? "Đang thuê"
-      : item.TrangThai,
-  image: item.HinhAnh,
-
-  renter: item.TenKH ?? "Chưa có tên",
-  returnDate: item.NgayTraDuKien ?? "Chưa có hạn trả",
+          id: item.MaTP,
+          name: item.TenTP,
+          price: item.GiaThue,
+          size: item.MoTa ? `${item.Size} - ${item.MoTa}` : item.Size,
+          status: item.TrangThai === "Dang thue" ? "Đang thuê" : item.TrangThai,
+          image: item.HinhAnh,
+          renter: item.TenKH ?? "Chưa có tên",
+          returnDate: item.NgayTraDuKien ?? "Chưa có hạn trả",
         }));
-        
-        
         setCostumes(mappedData); 
       })
       .catch((err) => console.error("Lỗi fetch API:", err));
@@ -128,13 +119,10 @@ export default function CostumeListPage() {
   const filteredData = useMemo(() => {
     return costumes
       .filter((item) => {
-        // Thêm dấu "?" sau item.name và item.id để tránh lỗi sập trang nếu dữ liệu rỗng
         const matchSearch =
           (item.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
           (item.id?.toLowerCase() || "").includes(search.toLowerCase());
-
         const matchStatus = statusFilter ? item.status === statusFilter : true;
-
         return matchSearch && matchStatus;
       })
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
@@ -195,9 +183,7 @@ export default function CostumeListPage() {
           >
             <option value="">Tất cả trạng thái</option>
             {Object.values(STATUS).map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
+              <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </div>
@@ -208,7 +194,6 @@ export default function CostumeListPage() {
               key={item.id}
               style={styles.card}
               onClick={() => {
-                // Đi tìm dữ liệu chuẩn nhất từ mảng costumes gốc
                 const realItem = costumes.find(c => c.id === item.id) || item;
                 setSelected(realItem);
               }}
@@ -234,22 +219,11 @@ export default function CostumeListPage() {
           <div style={styles.modalOverlay} onClick={() => setSelected(null)}>
             <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
               <h2 style={styles.h2}>Chi tiết trang phục</h2>
-
               <img src={selected.image} style={styles.detailImage} alt={selected.name} />
-
-              <p>
-                <b>Mã:</b> {selected.id}
-              </p>
-              <p>
-                <b>Tên:</b> {selected.name}
-              </p>
-              <p>
-                <b>Giá thuê:</b> {selected.price.toLocaleString()} VND
-              </p>
-              <p>
-                <b>Mô tả:</b> {selected.size}
-              </p>
-
+              <p><b>Mã:</b> {selected.id}</p>
+              <p><b>Tên:</b> {selected.name}</p>
+              <p><b>Giá thuê:</b> {selected.price.toLocaleString()} VND</p>
+              <p><b>Mô tả:</b> {selected.size}</p>
               <p style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <b>Trạng thái:</b>{" "}
                 <span
@@ -261,19 +235,14 @@ export default function CostumeListPage() {
                   {selected.status}
                 </span>
               </p>
-
-              {/* KIỂM TRA ĐIỀU KIỆN: Nếu trạng thái là "Đang thuê" thì mới hiện khung thông báo này */}
               {selected.status === "Đang thuê" && (
                <div style={{ backgroundColor: '#fef3c7', padding: '10px', borderRadius: '5px', marginTop: '10px' }}>
                 <p style={{ color: '#b45309', margin: 0 }}>
-                 <strong>Lịch đang thuê:</strong> Khách đang thuê: {selected.renter} – Hạn trả: {selected.returnDate}
+                  <strong>Lịch đang thuê:</strong> Khách đang thuê: {selected.renter} – Hạn trả: {selected.returnDate}
                 </p>
                </div>
               )}
-
-              <button style={styles.button} onClick={() => setSelected(null)}>
-                Đóng
-              </button>
+              <button style={styles.button} onClick={() => setSelected(null)}>Đóng</button>
             </div>
           </div>
         )}
@@ -370,6 +339,7 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1000
   },
   modal: {
     background: "#fff",
@@ -387,7 +357,7 @@ const styles: Record<string, CSSProperties> = {
     padding: "10px 16px",
     borderRadius: 8,
     border: "none",
-    background: "#2563EB",
+    background: "#4361EE", // Chỉnh lại màu xanh cho đồng nhất
     color: "#fff",
     cursor: "pointer",
     width: "100%",

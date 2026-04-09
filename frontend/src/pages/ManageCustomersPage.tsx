@@ -12,7 +12,7 @@ const API_BASE = 'http://localhost:3003/api';
 export default function ManageCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [, setError] = useState('');
   const [keyword, setKeyword] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState<Customer>({

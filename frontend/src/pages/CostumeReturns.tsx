@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, ClipboardList, Users, Shirt, Settings, LogOut } from 'lucide-react';
 
-// --- ĐỊNH NGHĨA KIỂU DỮ LIỆU ---
-interface TrangPhuc {
-  id: string; // Khớp với MaTP (VarChar) trong Database
-  ten: string;
-  hinh: string;
-  status: 'Bình thường' | 'Hư hỏng' | 'Mất';
-  moTaLoi: string;
-  phiHuHong: number;
-}
-
 // --- COMPONENT MENU (SIDEBAR) ---
 function Menu() {
   const userRole = localStorage.getItem("userRole");

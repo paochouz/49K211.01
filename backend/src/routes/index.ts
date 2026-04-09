@@ -2,7 +2,8 @@ import { Router } from "express";
 import { authRoutes } from "./authRoutes";
 import { customerRoutes } from "./customerRoutes";
 import { costumeRoutes } from "./costumeRoutes";
-import costumeListRoutes from "./CostumeListRoute"; 
+import costumeListRoutes from "./CostumeListRoute";
+import { penaltyConfigRoutes } from "./penaltyConfigRoutes";
 // 1. Import route trả đồ mới
 import { returnRoutes } from "./returnRoutes"; 
 
@@ -12,6 +13,7 @@ routes.use("/auth", authRoutes);
 routes.use("/customers", customerRoutes);
 routes.use("/costumes", costumeRoutes);
 routes.use("/costume-list", costumeListRoutes);
+routes.use("/penalty-config", penaltyConfigRoutes);
 
 // 2. Đăng ký route trả đồ
 // Đường dẫn gọi từ Frontend sẽ là: /api/returns

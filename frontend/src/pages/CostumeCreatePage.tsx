@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import type { CSSProperties, ChangeEvent } from "react";
 
 export default function CostumeCreatePage() {
   const [form, setForm] = useState({
@@ -10,12 +11,13 @@ export default function CostumeCreatePage() {
     hinhAnh: null as File | null,
   });
 
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const [loading, setLoading] = useState(false);
 
   // ================= VALIDATE =================
-  const validate = () => {
-    let newErrors: any = {};
+  const validate = (): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
 
     if (!form.tenTP.trim()) {
       newErrors.tenTP = "Tên trang phục bắt buộc";
@@ -37,13 +39,13 @@ export default function CostumeCreatePage() {
   };
 
   // ================= HANDLE CHANGE =================
-  const handleChange = (e: any) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
 
-  const handleFileChange = (e: any) => {
-    setForm({ ...form, hinhAnh: e.target.files[0] });
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, hinhAnh: e.target.files?.[0] || null });
   };
 
   // ================= SUBMIT =================
@@ -66,7 +68,7 @@ export default function CostumeCreatePage() {
         formData.append("hinhAnh", form.hinhAnh);
       }
 
-      const res = await fetch("http://localhost:3002/api/costumes", {
+      const res = await fetch("http://localhost:3003/api/costumes", {
         method: "POST",
         body: formData,
       });
@@ -182,10 +184,10 @@ export default function CostumeCreatePage() {
         {/* Mô tả */}
         <div style={styles.group}>
           <label style={styles.label}>Mô tả</label>
-          <textarea
+        <textarea
             name="moTa"
             value={form.moTa}
-            onChange={handleChange}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleChange(e as any)}
             style={styles.textarea}
           />
         </div>
@@ -212,7 +214,7 @@ export default function CostumeCreatePage() {
 }
 
 // ================= STYLE =================
-const styles: any = {
+const styles: Record<string, CSSProperties> = {
   container: {
     fontFamily: "Inter, sans-serif",
     background: "#F8FAFC",

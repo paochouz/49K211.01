@@ -8,6 +8,8 @@ import ManageCustomersPage from "./pages/ManageCustomersPage";
 
 // Import thêm component Xử lý trả đồ
 import CostumeReturns from "./pages/CostumeReturns";
+import PenaltyConfigPage from "./pages/PenaltyConfigPage";
+
 
 function App() {
   return (
@@ -25,10 +27,13 @@ function App() {
         <Route path="/costumes/create" element={<CostumeCreatePage />} />
         <Route path="/costumes" element={<CostumeListPage />} />
 
+
         {/* Route mới: Xử lý trả đồ & Quyết toán đơn hàng */}
         <Route path="/tra-do" element={<CostumeReturns />} />
-        
+        {/* E9 - Cấu hình phạt */}
+        <Route path="/admin/cau-hinh-phat" element={<PenaltyConfigPage />} />
       </Routes>
+
     </BrowserRouter>
   );
 }
