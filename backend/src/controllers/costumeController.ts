@@ -135,12 +135,12 @@ export async function createCostume(req: Request, res: Response) {
     const created = await findCostumeById(pool, newMaTP);
 
     return res.status(201).json({
-      message: "Them trang phuc thanh cong.",
+      message: "Thêm trang phục thành công.",
       item: created ? mapCostumeRow(req, created) : null,
     });
   } catch (error) {
     console.error("createCostume error:", error);
-    return res.status(500).json({ message: "Loi server khi them trang phuc." });
+    return res.status(500).json({ message: "Lỗi server khi thêm trang phục." });
   }
 }
 
@@ -158,7 +158,7 @@ export async function listCostumes(req: Request, res: Response) {
     );
   } catch (error) {
     console.error("listCostumes error:", error);
-    return res.status(500).json({ message: "Loi server khi lay danh sach trang phuc." });
+    return res.status(500).json({ message: "Lỗi server khi lấy danh sách trang phục." });
   }
 }
 
@@ -169,13 +169,13 @@ export async function getCostumeById(req: Request, res: Response) {
     const costume = await findCostumeById(pool, maTP);
 
     if (!costume) {
-      return res.status(404).json({ message: "Khong tim thay trang phuc." });
+      return res.status(404).json({ message: "Không tìm thấy trang phục." });
     }
 
     return res.status(200).json(mapCostumeRow(req, costume));
   } catch (error) {
     console.error("getCostumeById error:", error);
-    return res.status(500).json({ message: "Loi server khi lay chi tiet trang phuc." });
+    return res.status(500).json({ message: "Lỗi server khi lấy chi tiết trang phục." });
   }
 }
 
@@ -189,18 +189,18 @@ export async function updateCostume(req: Request, res: Response) {
     const existing = await findCostumeById(pool, maTP);
 
     if (!existing) {
-      return res.status(404).json({ message: "Khong tim thay trang phuc." });
+      return res.status(404).json({ message: "Không tìm thấy trang phục." });
     }
 
     const nextStatus = payload.trangThai || existing.TrangThai;
 
     if (!ALLOWED_STATUSES.has(nextStatus)) {
-      return res.status(400).json({ message: "Trang thai trang phuc khong hop le." });
+      return res.status(400).json({ message: "Trạng thái trang phục không hợp lệ." });
     }
 
     if (nextStatus === "Đang thuê") {
       return res.status(400).json({
-        message: "Khong the cap nhat trang thai thanh Dang thue tai man hinh nay.",
+        message: "Không thể cập nhật trạng thái thành Đang thuê tại màn hình này.",
       });
     }
 
@@ -236,12 +236,12 @@ export async function updateCostume(req: Request, res: Response) {
     const updated = await findCostumeById(pool, maTP);
 
     return res.status(200).json({
-      message: "Luu thay doi thanh cong.",
+      message: "Lưu thay đổi thành công.",
       item: updated ? mapCostumeRow(req, updated) : null,
     });
   } catch (error) {
     console.error("updateCostume error:", error);
-    return res.status(500).json({ message: "Loi server khi cap nhat trang phuc." });
+    return res.status(500).json({ message: "Lỗi server khi cập nhật trang phục." });
   }
 }
 
@@ -263,7 +263,7 @@ export async function deleteCostume(req: Request, res: Response) {
 
     if (inUseResult.recordset.length > 0) {
       return res.status(400).json({
-        message: "Khong the xoa trang phuc dang duoc dung trong don thue.",
+        message: "Không thể xóa trang phục đang được dùng trong đơn thuê.",
       });
     }
 
@@ -276,12 +276,12 @@ export async function deleteCostume(req: Request, res: Response) {
       `);
 
     if ((deleteResult.rowsAffected?.[0] ?? 0) === 0) {
-      return res.status(404).json({ message: "Khong tim thay trang phuc." });
+      return res.status(404).json({ message: "Không tìm thấy trang phục." });
     }
 
-    return res.status(200).json({ message: "Xoa trang phuc thanh cong." });
+    return res.status(200).json({ message: "Xóa trang phục thành công." });
   } catch (error) {
     console.error("deleteCostume error:", error);
-    return res.status(500).json({ message: "Loi server khi xoa trang phuc." });
+    return res.status(500).json({ message: "Lỗi server khi xóa trang phục." });
   }
 }
