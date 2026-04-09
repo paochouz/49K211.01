@@ -9,7 +9,7 @@ import {
   mapStatusToDb,
   normalizeMaDon,
   parseVnDate,
-} from "../utils/donThueMappers";
+} from "../utils/DonThueMappers";
 
 type Row = {
   MaDon: string;
@@ -28,7 +28,6 @@ type Row = {
 };
 
 function rowToOrderItem(r: Row) {
-  const status = mapStatusFromDb(r.TrangThaiDon);
   const returnedAt =
     r.NgayTraThucTe != null ? formatVnDate(r.NgayTraThucTe) : undefined;
 
@@ -41,7 +40,7 @@ function rowToOrderItem(r: Row) {
     rentedAt: formatVnDate(r.NgayThue),
     dueDate: formatVnDate(r.NgayTraDuKien),
     ...(returnedAt ? { returnedAt } : {}),
-    status,
+    status: mapStatusFromDb(r.TrangThaiDon),
     deposit: formatVnd(r.TienCoc),
     total: formatVnd(r.TongTienThue),
     _internal: {
@@ -86,9 +85,15 @@ INNER JOIN TrangPhuc tp ON fl.MaTP = tp.MaTP
 export async function listDonThue(req: Request, res: Response) {
   try {
     const pool = await getDb();
-    const statusParam = typeof req.query.status === "string" ? req.query.status.trim() : "";
-    const customer = typeof req.query.customer === "string" ? req.query.customer.trim() : "";
-    const phone = typeof req.query.phone === "string" ? req.query.phone.replace(/\D/g, "").trim() : "";
+
+    const statusParam =
+      typeof req.query.status === "string" ? req.query.status.trim() : "";
+    const customer =
+      typeof req.query.customer === "string" ? req.query.customer.trim() : "";
+    const phone =
+      typeof req.query.phone === "string"
+        ? req.query.phone.replace(/\D/g, "").trim()
+        : "";
 
     const statusDb = statusParam ? mapStatusToDb(statusParam) : null;
     if (statusParam && !statusDb) {
@@ -102,31 +107,32 @@ export async function listDonThue(req: Request, res: Response) {
       query += " AND dt.TrangThaiDon = @trangThaiDon";
       request.input("trangThaiDon", sql.NVarChar(50), statusDb);
     }
+
     if (customer) {
-      // Khớp frontend: includes + không phân biệt hoa/thường (DonThue.tsx)
       query += " AND LOWER(kh.TenKH) LIKE LOWER(@tenKH)";
       request.input("tenKH", sql.NVarChar(200), `%${customer}%`);
     }
+
     if (phone) {
       query += " AND kh.SoDienThoai LIKE @phone";
       request.input("phone", sql.VarChar(10), `%${phone}%`);
     }
 
-    query += " ORDER BY dt.NgayTao DESC";
+    query += " ORDER BY dt.NgayTao DESC, dt.MaDon DESC";
 
     const result = await request.query(query);
     const rows = result.recordset as Row[];
 
     const items = rows.map((r) => {
-      const o = rowToOrderItem(r);
-      const { _internal, ...rest } = o;
+      const mapped = rowToOrderItem(r);
+      const { _internal, ...rest } = mapped;
       return rest;
     });
 
-    return res.json(items);
+    return res.status(200).json(items);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Lỗi server" });
+    console.error("listDonThue error:", error);
+    return res.status(500).json({ message: "Lỗi server khi lấy danh sách đơn thuê." });
   }
 }
 
@@ -134,44 +140,49 @@ export async function confirmDonThueDeposit(req: Request, res: Response) {
   try {
     const maDon = normalizeMaDon(req.params.maDon);
     const body = req.body as { tienCoc?: number };
+
     const tienCoc =
-      typeof body.tienCoc === "number" && body.tienCoc >= 0 ? body.tienCoc : 500_000;
+      typeof body.tienCoc === "number" && body.tienCoc >= 0 ? body.tienCoc : 500000;
 
     const pool = await getDb();
 
     const check = await pool
       .request()
       .input("maDon", sql.VarChar(10), maDon)
-      .query(
-        `SELECT TrangThaiDon, TienCoc FROM DonThue WHERE MaDon = @maDon`
-      );
+      .query(`SELECT TrangThaiDon, TienCoc FROM DonThue WHERE MaDon = @maDon`);
 
     if (check.recordset.length === 0) {
       return res.status(404).json({ message: "Không tồn tại hóa đơn." });
     }
 
     const current = check.recordset[0] as { TrangThaiDon: string; TienCoc: number };
+
     if (current.TrangThaiDon !== "Chua coc") {
-      return res.status(400).json({ message: "Chỉ có thể cọc khi đơn ở trạng thái chưa cọc." });
+      return res
+        .status(400)
+        .json({ message: "Chỉ có thể cọc khi đơn ở trạng thái Chưa cọc đơn." });
     }
 
-    const newTienCoc = Number(current.TienCoc) === 0 ? tienCoc : Number(current.TienCoc);
+    const newTienCoc =
+      Number(current.TienCoc) === 0 ? tienCoc : Number(current.TienCoc);
 
     await pool
       .request()
       .input("maDon", sql.VarChar(10), maDon)
       .input("tienCoc", sql.Decimal(12, 2), newTienCoc)
-      .query(
-        `UPDATE DonThue SET TrangThaiDon = N'Dang thue', TienCoc = @tienCoc WHERE MaDon = @maDon`
-      );
+      .query(`
+        UPDATE DonThue
+        SET TrangThaiDon = N'Dang thue',
+            TienCoc = @tienCoc
+        WHERE MaDon = @maDon
+      `);
 
-    const inv = invoiceNoFromMaDon(maDon);
-    return res.json({
-      message: `Hóa đơn ${inv} đã chuyển sang trạng thái "Đang thuê".`,
+    return res.status(200).json({
+      message: `Hóa đơn ${invoiceNoFromMaDon(maDon)} đã chuyển sang trạng thái "Đang thuê".`,
     });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Lỗi server" });
+    console.error("confirmDonThueDeposit error:", error);
+    return res.status(500).json({ message: "Lỗi server khi xác nhận cọc." });
   }
 }
 
@@ -191,16 +202,22 @@ export async function patchDonThue(req: Request, res: Response) {
     const check = await pool
       .request()
       .input("maDon", sql.VarChar(10), maDon)
-      .query(
-        `SELECT dt.MaKH, fl.MaChiTiet, fl.MaTP
-         FROM DonThue dt
-         INNER JOIN (
-           SELECT MaChiTiet, MaDon, MaTP,
-             ROW_NUMBER() OVER (PARTITION BY MaDon ORDER BY MaChiTiet) AS rn
-           FROM ChiTietDonThue
-         ) fl ON fl.MaDon = dt.MaDon AND fl.rn = 1
-         WHERE dt.MaDon = @maDon`
-      );
+      .query(`
+        SELECT
+          dt.MaKH,
+          fl.MaChiTiet,
+          fl.MaTP
+        FROM DonThue dt
+        INNER JOIN (
+          SELECT
+            MaChiTiet,
+            MaDon,
+            MaTP,
+            ROW_NUMBER() OVER (PARTITION BY MaDon ORDER BY MaChiTiet) AS rn
+          FROM ChiTietDonThue
+        ) fl ON fl.MaDon = dt.MaDon AND fl.rn = 1
+        WHERE dt.MaDon = @maDon
+      `);
 
     if (check.recordset.length === 0) {
       return res.status(404).json({ message: "Không tồn tại hóa đơn." });
@@ -221,13 +238,16 @@ export async function patchDonThue(req: Request, res: Response) {
     if (dueDate != null && dueDate !== "") {
       due = parseVnDate(dueDate);
       if (!due) {
-        return res.status(400).json({ message: "Hạn trả không đúng định dạng DD/MM/YYYY." });
+        return res.status(400).json({
+          message: "Hạn trả không đúng định dạng DD/MM/YYYY.",
+        });
       }
     }
 
-    const phoneDigits = phone != null ? phone.replace(/\D/g, "").slice(0, 10) : undefined;
+    const phoneDigits =
+      phone != null ? phone.replace(/\D/g, "").slice(0, 10) : undefined;
 
-    if (customer != null && customer !== "") {
+    if (customer != null && customer.trim() !== "") {
       await pool
         .request()
         .input("maKH", sql.VarChar(10), MaKH)
@@ -245,13 +265,15 @@ export async function patchDonThue(req: Request, res: Response) {
       } catch (e: unknown) {
         const err = e as { number?: number };
         if (err.number === 2627 || err.number === 2601) {
-          return res.status(400).json({ message: "Số điện thoại đã được dùng cho khách khác." });
+          return res
+            .status(400)
+            .json({ message: "Số điện thoại đã được dùng cho khách khác." });
         }
         throw e;
       }
     }
 
-    if (item != null && item !== "") {
+    if (item != null && item.trim() !== "") {
       await pool
         .request()
         .input("maTP", sql.VarChar(10), MaTP)
@@ -264,14 +286,17 @@ export async function patchDonThue(req: Request, res: Response) {
         .request()
         .input("maChiTiet", sql.Int, MaChiTiet)
         .input("ngayTra", sql.Date, due)
-        .query(
-          `UPDATE ChiTietDonThue SET NgayTraDuKien = @ngayTra WHERE MaChiTiet = @maChiTiet`
-        );
+        .query(`
+          UPDATE ChiTietDonThue
+          SET NgayTraDuKien = @ngayTra
+          WHERE MaChiTiet = @maChiTiet
+        `);
     }
 
     if (statusDb) {
       const tran = new sql.Transaction(pool);
       await tran.begin();
+
       try {
         const rq = new sql.Request(tran);
         rq.input("maDon", sql.VarChar(10), maDon);
@@ -279,13 +304,19 @@ export async function patchDonThue(req: Request, res: Response) {
 
         if (statusDb === "Da tra") {
           rq.input("ngayTraTT", sql.Date, new Date());
-          await rq.query(
-            `UPDATE DonThue SET TrangThaiDon = @trangThai, NgayTraThucTe = @ngayTraTT WHERE MaDon = @maDon`
-          );
+          await rq.query(`
+            UPDATE DonThue
+            SET TrangThaiDon = @trangThai,
+                NgayTraThucTe = @ngayTraTT
+            WHERE MaDon = @maDon
+          `);
         } else {
-          await rq.query(
-            `UPDATE DonThue SET TrangThaiDon = @trangThai, NgayTraThucTe = NULL WHERE MaDon = @maDon`
-          );
+          await rq.query(`
+            UPDATE DonThue
+            SET TrangThaiDon = @trangThai,
+                NgayTraThucTe = NULL
+            WHERE MaDon = @maDon
+          `);
         }
 
         await tran.commit();
@@ -295,10 +326,11 @@ export async function patchDonThue(req: Request, res: Response) {
       }
     }
 
-    const inv = invoiceNoFromMaDon(maDon);
-    return res.json({ message: `Đã cập nhật hóa đơn ${inv}.` });
+    return res.status(200).json({
+      message: `Đã cập nhật hóa đơn ${invoiceNoFromMaDon(maDon)}.`,
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Lỗi server" });
+    console.error("patchDonThue error:", error);
+    return res.status(500).json({ message: "Lỗi server khi cập nhật hóa đơn." });
   }
 }
