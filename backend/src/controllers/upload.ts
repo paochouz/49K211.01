@@ -9,17 +9,17 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
+  destination: (_req: any, _file: any, cb: any) => {
     cb(null, uploadDir);
   },
-  filename: (_req, file, cb) => {
+  filename: (_req: any, file: any, cb: any) => {
     const ext = path.extname(file.originalname);
     const uniqueName = `costume-${Date.now()}${ext}`;
     cb(null, uniqueName);
   },
 });
 
-const fileFilter: multer.Options["fileFilter"] = (_req, file, cb) => {
+const fileFilter = (_req: any, file: any, cb: any) => {
   const allowedExt = [".jpg", ".jpeg", ".png", ".webp"];
   const ext = path.extname(file.originalname).toLowerCase();
 
