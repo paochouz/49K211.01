@@ -148,7 +148,7 @@ export default function RentalOrdersPage() {
           </button>
         </section>
 
-        <section className="grid gap-4 grid-cols-2 xl:grid-cols-5">
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
           <StatCard label="Tổng hóa đơn" value={stats.total} />
           <StatCard label="Chưa cọc đơn" value={stats.unpaidDeposit} />
           <StatCard label="Đang thuê" value={stats.renting} />
