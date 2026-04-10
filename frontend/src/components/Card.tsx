@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
+  className?: string;
 };
 
-export default function Card({ children }: Props) {
-  return <div className="app-card">{children}</div>;
+export default function Card({ children, className }: Props) {
+  return <div className={`app-card${className ? ` ${className}` : ""}`}>{children}</div>;
 }
