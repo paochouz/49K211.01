@@ -1,4 +1,4 @@
-import React from 'react';
+import type { } from 'react';
 
 interface AlertModalProps {
   message: string;

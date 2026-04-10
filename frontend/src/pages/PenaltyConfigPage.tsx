@@ -3,15 +3,8 @@ import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Menu from './Menu';
 import { penaltyStore } from '../mock/mockStore';
 
-interface CauHinhPhat {
-  tyLePhatQuaHan: number;
-  moTaQuyDinh: string;
-  trangThaiApDung: boolean;
-}
-
 const PenaltyConfigPage = () => {
   const [config, setConfig] = useState(() => penaltyStore.get());
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const handleSave = () => {
@@ -116,17 +109,15 @@ const PenaltyConfigPage = () => {
           {/* Save button */}
           <button
             onClick={handleSave}
-            disabled={loading}
             style={{
               width: '100%', height: 40, backgroundColor: '#2563eb', color: '#fff',
               border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 14,
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              opacity: loading ? 0.7 : 1,
             }}
           >
             <Save size={16} />
-            {loading ? 'Đang lưu...' : 'Lưu cấu hình'}
+            Lưu cấu hình
           </button>
         </div>
       </main>

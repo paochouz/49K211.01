@@ -49,6 +49,7 @@ export async function createCostume(req: Request, res: Response) {
 export async function listCostumes(req: Request, res: Response) {
   try {
     const pool = await getDb();
+<<<<<<< HEAD
     const result = await pool.request().query(`SELECT * FROM TrangPhuc ORDER BY maTP DESC`);
     res.json(result.recordset);
   } catch (error) {
@@ -95,6 +96,15 @@ export async function deleteCostume(req: Request, res: Response) {
       .query(`DELETE FROM TrangPhuc WHERE maTP = @maTP`);
 
     res.json({ message: "Xóa thành công" });
+=======
+
+    const result = await pool.request().query(`
+      SELECT * FROM TrangPhuc ORDER BY maTP DESC
+    `);
+
+    res.json(result.recordset);
+
+>>>>>>> ffd36726ff37faff37c8a5913a30a64839736ecb
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Lỗi server" });

@@ -26,18 +26,6 @@ type RentItem = {
 };
 
 type DepositMethod = "GIAY_TO" | "TIEN_MAT_CHUYEN_KHOAN";
-
-const STORAGE_KEYS = {
-  lastInvoiceNumber: "HDT_LAST_NUMBER",
-};
-
-
-const seedCostumes: Costume[] = [
-  { id: "TP000001", tenTP: "Váy đầm dài màu đỏ", size: "L", donGia: 120000 },
-  { id: "TP000002", tenTP: "Áo dài truyền thống", size: "M", donGia: 150000 },
-  { id: "TP000003", tenTP: "Vest nam lịch lãm", size: "XL", donGia: 200000 },
-];
-
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -95,10 +83,6 @@ function calcDaysInclusiveDDMMYYYY(startStr: string, endStr: string) {
   const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   const days = diffDays + 1;
   return days <= 0 ? 1 : days;
-}
-
-function formatInvoice(number: number) {
-  return `HDT${String(number).padStart(6, "0")}`;
 }
 
 function generateCustomerId() {
