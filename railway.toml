@@ -1,13 +1,10 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd frontend && npm install && npm run build"
+buildCommand = "cd frontend && rm -f package-lock.json && npm install && npm run build"
 
 [deploy]
 startCommand = "cd frontend && npx serve -s dist -l $PORT"
 restartPolicyType = "ON_FAILURE"
 
-[nixpacks]
-providers = ["node"]
-
 [nixpacks.variables]
-NODE_VERSION = "20"
+NODE_VERSION = "22"
