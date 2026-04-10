@@ -112,7 +112,6 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
               <div style={{ position: 'relative' }}>
                 <select value={formData.loaiTP} style={{ ...s.input, appearance: 'none' as any }}
                   onChange={e => setFormData({ ...formData, loaiTP: e.target.value })}>
-                  <option value="">Ch&#7885;n lo&#7841;i</option>
                   <option value="V&#225;y d&#7841; h&#7897;i">V&#225;y d&#7841; h&#7897;i</option>
                   <option value="Vest">Vest</option>
                   <option value="&#193;o d&#224;i">&#193;o d&#224;i</option>

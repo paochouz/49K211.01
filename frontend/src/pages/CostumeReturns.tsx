@@ -4,8 +4,9 @@ import Menu from './Menu';
 import AlertModal from '../components/AlertModal';
 import { orderStore, costumeStore } from '../mock/mockStore';
 
-const CostumeReturns = () => {
-  const { maDon } = useParams<{ maDon: string }>();
+const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: () => void }) => {
+  const params = useParams<{ maDon: string }>();
+  const maDon = maDonProp || params.maDon;
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -91,7 +92,10 @@ const CostumeReturns = () => {
       });
     });
     setAlertMsg('Xử lý trả đồ thành công!');
-    setTimeout(() => navigate('/don-thue'), 1500);
+    setTimeout(() => {
+      if (onClose) onClose();
+      else navigate('/don-thue');
+    }, 1500);
   };
 
   const card = { backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '24px', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' };
@@ -101,20 +105,24 @@ const CostumeReturns = () => {
 
   if (loading || !data) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}><Menu /></aside>
-      <main style={{ marginLeft: '220px', padding: '24px', textAlign: 'center', color: '#64748b' }}>
+      {!onClose && <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}><Menu /></aside>}
+      <main style={{ marginLeft: onClose ? 0 : '220px', padding: '24px', textAlign: 'center', color: '#64748b' }}>
         {loading ? 'Đang tải...' : 'Không tìm thấy đơn hàng!'}
       </main>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
-      <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}>
-        <Menu />
-      </aside>
+    <div style={onClose
+      ? { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px', overflowY: 'auto' }
+      : { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }
+    }>
+      {!onClose && <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}><Menu /></aside>}
 
-      <div style={{ marginLeft: '220px', display: 'flex', justifyContent: 'center', padding: '32px 24px' }}>
+      <div style={onClose
+        ? { marginLeft: 0, display: 'flex', justifyContent: 'center', padding: '0', width: '100%', maxWidth: '900px' }
+        : { marginLeft: '220px', display: 'flex', justifyContent: 'center', padding: '32px 24px' }
+      }>
         <main style={{ width: '100%', maxWidth: '860px', backgroundColor: '#F8FAFC', borderRadius: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB' }}>
 
           {/* Header */}
@@ -231,7 +239,7 @@ const CostumeReturns = () => {
 
           {/* Footer */}
           <div style={{ padding: '16px 32px', borderTop: '1px solid #E5E7EB', backgroundColor: 'white', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <button onClick={() => navigate('/don-thue')} style={{ height: '44px', padding: '0 28px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#F8FAFC', fontWeight: 500, cursor: 'pointer', color: '#64748B', fontSize: '14px' }}>
+            <button onClick={() => onClose ? onClose() : navigate('/don-thue')} style={{ height: '44px', padding: '0 28px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#F8FAFC', fontWeight: 500, cursor: 'pointer', color: '#64748B', fontSize: '14px' }}>
               Hủy
             </button>
             <button

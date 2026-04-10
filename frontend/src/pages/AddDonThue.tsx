@@ -269,6 +269,8 @@ function DateField({
 
 export default function AddDonThue({ onClose, initialData, onSuccess }: { onClose?: () => void; initialData?: OrderItem; onSuccess?: () => void }) {
   const isEditMode = !!initialData;
+  // Chỉ cho chỉnh sửa khi đơn ở trạng thái "Chưa cọc đơn"
+  const isLocked = isEditMode && initialData?.status !== 'Chưa cọc đơn';
   const minDateISO = useMemo(() => todayISO(), []);
   const minDateStr = useMemo(() => todayDDMMYYYY(), []);
 
@@ -524,21 +526,23 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <h2 style={titleStyle}>{isEditMode ? "Chỉnh sửa đơn thuê" : "Tạo đơn thuê trang phục"}</h2>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button
-              type="button"
-              style={linkButtonStyle}
-              onClick={() => {
-                setCustomerKeyword("");
-                setCustomerCreateMessage("");
-                setCustomerCreateIsError(false);
-                setCustomerCreateLoading(false);
-                setNewCustomer({ maKH: generateCustomerId(), tenKH: "", soDienThoai: "", diaChi: "" });
-                setCustomerMode("CREATE");
-                setIsCustomerModalOpen(true);
-              }}
-            >
-              + Thêm khách hàng
-            </button>
+            {!isEditMode && (
+              <button
+                type="button"
+                style={linkButtonStyle}
+                onClick={() => {
+                  setCustomerKeyword("");
+                  setCustomerCreateMessage("");
+                  setCustomerCreateIsError(false);
+                  setCustomerCreateLoading(false);
+                  setNewCustomer({ maKH: generateCustomerId(), tenKH: "", soDienThoai: "", diaChi: "" });
+                  setCustomerMode("CREATE");
+                  setIsCustomerModalOpen(true);
+                }}
+              >
+                + Thêm khách hàng
+              </button>
+            )}
             {onClose && null}
           </div>
         </div>
@@ -553,7 +557,8 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                   type="radio"
                   value="GIAY_TO"
                   checked={form.hinhThucCoc === "GIAY_TO"}
-                  onChange={() => setForm((p) => ({ ...p, hinhThucCoc: "GIAY_TO" }))}
+                  disabled={isLocked}
+                  onChange={() => !isLocked && setForm((p) => ({ ...p, hinhThucCoc: "GIAY_TO" }))}
                 />
                 Giấy tờ tùy thân
               </label>
@@ -562,7 +567,8 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                   type="radio"
                   value="TIEN_MAT_CHUYEN_KHOAN"
                   checked={form.hinhThucCoc === "TIEN_MAT_CHUYEN_KHOAN"}
-                  onChange={() => setForm((p) => ({ ...p, hinhThucCoc: "TIEN_MAT_CHUYEN_KHOAN" }))}
+                  disabled={isLocked}
+                  onChange={() => !isLocked && setForm((p) => ({ ...p, hinhThucCoc: "TIEN_MAT_CHUYEN_KHOAN" }))}
                 />
                 Tiền mặt/chuyển khoản
               </label>
@@ -587,7 +593,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                   style={inputStyle}
                 />
               </div>
-              <button type="button" onClick={() => setIsCustomerModalOpen(true)} style={secondaryButtonStyle}>
+              <button type="button" onClick={() => !isLocked && setIsCustomerModalOpen(true)} disabled={isLocked} style={{ ...secondaryButtonStyle, ...(isLocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}>
                 Chọn
               </button>
             </div>
@@ -597,7 +603,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
           <div style={groupStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <label style={labelStyle}>Trang phục *</label>
-              <button type="button" onClick={addItem} style={secondaryButtonStyle}>
+              <button type="button" onClick={() => !isLocked && addItem()} disabled={isLocked} style={{ ...secondaryButtonStyle, ...(isLocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}>
                 + Thêm trang phục
               </button>
             </div>
@@ -613,7 +619,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                   <div key={item.id} style={itemCardStyle}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                       <div style={{ fontWeight: 600, color: "#0f172a" }}>Sản phẩm</div>
-                      <button type="button" onClick={() => removeItem(item.id)} style={dangerTextButtonStyle}>
+                      <button type="button" onClick={() => !isLocked && removeItem(item.id)} disabled={isLocked} style={{ ...dangerTextButtonStyle, ...(isLocked ? { opacity: 0.3, cursor: 'not-allowed' } : {}) }}>
                         Xóa
                       </button>
                     </div>
@@ -628,7 +634,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                             readOnly
                             style={inputStyle}
                           />
-                          <button type="button" onClick={() => openCostumeModal(item.id)} style={secondaryButtonStyle}>
+                          <button type="button" onClick={() => !isLocked && openCostumeModal(item.id)} disabled={isLocked} style={{ ...secondaryButtonStyle, ...(isLocked ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}>
                             Chọn
                           </button>
                         </div>
@@ -690,12 +696,12 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
             <input
               type="number"
               value={form.tienCoc}
-              disabled={form.hinhThucCoc === "GIAY_TO"}
+              disabled={form.hinhThucCoc === "GIAY_TO" || isLocked}
               onChange={(e) => {
                 setTienCocTouched(true);
                 setForm((p) => ({ ...p, tienCoc: Number(e.target.value) || 0 }));
               }}
-              style={inputStyle}
+              style={{ ...inputStyle, ...((form.hinhThucCoc === "GIAY_TO" || isLocked) ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed' } : {}) }}
             />
           </div>
 
@@ -710,8 +716,9 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
             <label style={labelStyle}>Trạng thái đơn</label>
             <input
               value={form.trangThai}
-              onChange={(e) => setForm((p) => ({ ...p, trangThai: e.target.value }))}
-              style={inputStyle}
+              disabled={isEditMode}
+              onChange={(e) => !isEditMode && setForm((p) => ({ ...p, trangThai: e.target.value }))}
+              style={{ ...inputStyle, ...(isEditMode ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {}) }}
             />
           </div>
 
@@ -727,11 +734,17 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
             />
           </div>
 
+          {isLocked && (
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fcd34d', fontSize: 13, color: '#92400e', marginBottom: 8 }}>
+              Đơn thuê ở trạng thái <b>{initialData?.status}</b> — không thể chỉnh sửa.
+            </div>
+          )}
+
           <button type="submit" style={{
             ...primaryButtonStyle,
-            opacity: (form.khachHang && items.length > 0) ? 1 : 0.45,
-            cursor: (form.khachHang && items.length > 0) ? 'pointer' : 'not-allowed',
-          }} disabled={!form.khachHang || items.length === 0}>
+            opacity: (!isLocked && form.khachHang && items.length > 0) ? 1 : 0.45,
+            cursor: (!isLocked && form.khachHang && items.length > 0) ? 'pointer' : 'not-allowed',
+          }} disabled={isLocked || !form.khachHang || items.length === 0}>
             {isEditMode ? "Lưu thay đổi" : "Tạo đơn"}
           </button>
 

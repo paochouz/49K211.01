@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Menu from './Menu';
 import AddDonThue from './AddDonThue';
+import CostumeReturns from './CostumeReturns';
 import { orderStore, costumeStore } from '../mock/mockStore';
 
 export type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
@@ -25,11 +25,11 @@ type StatusBadgeProps = {
 };
 
 export default function RentalOrdersPage() {
-  const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OrderItem | null>(null);
+  const [returningOrder, setReturningOrder] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
@@ -257,7 +257,7 @@ export default function RentalOrdersPage() {
                   <button
                     type="button"
                     disabled={order.status !== 'Đang thuê' && order.status !== 'Trễ hạn'}
-                    onClick={() => navigate(`/costume-returns/${order.invoiceNo}`)}
+                    onClick={() => setReturningOrder(order.invoiceNo)}
                     className={`rounded-xl px-3 py-2 text-xs font-medium ${
                       order.status === 'Đang thuê' || order.status === 'Trễ hạn'
                         ? 'bg-emerald-100 text-emerald-700'
@@ -286,6 +286,13 @@ export default function RentalOrdersPage() {
         </section>
       </main>
       
+      {returningOrder && (
+        <CostumeReturns
+          maDonProp={returningOrder}
+          onClose={() => { setReturningOrder(null); fetchOrders(); }}
+        />
+      )}
+
       {isAddModalOpen && (
         <AddDonThue onClose={() => setIsAddModalOpen(false)} onSuccess={() => { fetchOrders(); setIsAddModalOpen(false); }} />
       )}
