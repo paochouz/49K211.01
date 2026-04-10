@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { OrderItem } from "./DonThue";
+import type { OrderStatus } from "./DonThue";
 import { orderStore, customerStore, costumeStore } from "../mock/mockStore";
 
 type Customer = {

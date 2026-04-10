@@ -4,7 +4,7 @@ import Menu from './Menu';
 import AddDonThue from './AddDonThue';
 import { orderStore, costumeStore } from '../mock/mockStore';
 
-type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
+export type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
 
 export type OrderItem = {
   id: string;
