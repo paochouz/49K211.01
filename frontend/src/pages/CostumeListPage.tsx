@@ -4,12 +4,14 @@ import { isOwner } from "../hooks/useAuth";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import AddCostumeModal from "../components/AddCostumeModal";
-import { costumeStore } from "../mock/mockStore";
+import UpdateTrangphuc from "./UpdateTrangphuc";
+import { costumeStore, orderStore } from "../mock/mockStore";
 
 const STATUS = {
   READY: "Sẵn sàng",
   RENTED: "Đang thuê",
   BROKEN: "Hư hỏng",
+  OVERDUE: "Trễ hạn",
 } as const;
 
 type StatusValue = (typeof STATUS)[keyof typeof STATUS];
@@ -25,10 +27,11 @@ type CostumeItem = {
   returnDate?: string;
 };
 
-const statusColor: Record<StatusValue, string> = {
+const statusColor: Record<string, string> = {
   [STATUS.READY]: "#22C55E",
   [STATUS.RENTED]: "#F59E0B",
   [STATUS.BROKEN]: "#EF4444",
+  [STATUS.OVERDUE]: "#EF4444",
 };
 
 export default function CostumeListPage() {
@@ -41,7 +44,7 @@ export default function CostumeListPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const mapCostume = (c: any) => ({
     id: c.maTP, name: c.tenTP, price: c.giaThue,
-    size: c.moTa ? `${c.size} - ${c.moTa}` : c.size,
+    size: c.moTa ? `Size ${c.size} - ${c.moTa}` : `Size ${c.size}`,
     status: c.trangThai as StatusValue,
     image: c.hinhAnh, renter: undefined, returnDate: undefined,
   });
@@ -84,7 +87,7 @@ export default function CostumeListPage() {
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#1e293b" }}>Quản lý trang phục</h1>
           {owner && (
             <button onClick={() => setShowAddModal(true)} style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', borderRadius: '10px', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-              + Thêm trang phục
+              + Thêm mới
             </button>
           )}
         </div>
@@ -129,44 +132,60 @@ export default function CostumeListPage() {
 
         {selected && (
           <div style={modalOverlayStyle} onClick={() => setSelected(null)}>
-            <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-              <h2 style={{ fontSize: 20, marginBottom: 16, color: "#1e293b" }}>Chi tiết trang phục</h2>
-              <img src={selected.image} style={{ width: "100%", borderRadius: 12, marginBottom: 16 }} alt={selected.name} />
-              <p><b>Mã:</b> {selected.id}</p>
-              <p><b>Tên:</b> {selected.name}</p>
-              <p><b>Giá thuê:</b> {selected.price.toLocaleString()} VND</p>
-              <p><b>Mô tả:</b> {selected.size}</p>
-              <p style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <b>Trạng thái:</b>
-                <span style={{ ...badgeStyle, backgroundColor: statusColor[selected.status] || "#94a3b8" }}>
-                  {selected.status}
-                </span>
-              </p>
-              {selected.status === "Đang thuê" && (
-                <div style={{ backgroundColor: "#fef3c7", padding: "10px", borderRadius: "5px", marginTop: "10px" }}>
-                  <p style={{ color: "#b45309", margin: 0 }}>
-                    <strong>Lịch đang thuê:</strong> {selected.renter} – Hạn trả: {selected.returnDate}
-                  </p>
+            <div style={{ ...modalStyle, width: 560, maxWidth: '95vw' }} onClick={(e) => e.stopPropagation()}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1e293b", margin: "0 0 16px" }}>Chi tiết trang phục</h2>
+
+              {/* Layout: hình trái, info phải */}
+              <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
+                <img
+                  src={selected.image || '/images/ao_dai.png'}
+                  alt={selected.name}
+                  style={{ width: 140, height: 140, borderRadius: 12, objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/140x140?text=TP'; }}
+                />
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    ['Mã', selected.id],
+                    ['Tên', selected.name],
+                    ['Giá thuê', `${selected.price.toLocaleString()} VNĐ`],
+                    ['Mô tả', selected.size],
+                  ].map(([l, v]) => (
+                    <div key={l} style={{ fontSize: 14, color: "#334155" }}>
+                      <span style={{ fontWeight: 600 }}>{l}: </span>{v}
+                    </div>
+                  ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                    <span style={{ fontWeight: 600 }}>Trạng thái: </span>
+                    <span style={{ ...badgeStyle, backgroundColor: statusColor[selected.status] || "#94a3b8" }}>
+                      {selected.status}
+                    </span>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Lịch đang thuê */}
+              {(selected.status === "Đang thuê" || selected.status === "Trễ hạn") && (() => {
+                const info = orderStore.getRentalInfo(selected.name);
+                return info ? (
+                  <div style={{ backgroundColor: "#fef3c7", padding: "12px 14px", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
+                    <b>Lịch đang thuê:</b> Khách đang thuê: {info.customer} – Hạn trả: {info.dueDate}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Buttons */}
               {owner && (
                 <>
                   <button
-                    style={{ marginTop: 16, padding: "10px 16px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#eef2ff", color: "#2563eb", cursor: "pointer", width: "100%", fontWeight: 600 }}
+                    style={{ marginBottom: 8, padding: "10px 16px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#eef2ff", color: "#2563eb", cursor: "pointer", width: "100%", fontWeight: 600, fontSize: 14 }}
                     onClick={() => { setEditItem(selected); setSelected(null); }}
                   >
-                    Cập nhật trang phục
-                  </button>
-                  <button
-                    style={{ marginTop: 8, padding: "10px 16px", borderRadius: 8, border: "1px solid #fecaca", background: "#fef2f2", color: "#ef4444", cursor: "pointer", width: "100%", fontWeight: 600 }}
-                    onClick={() => setConfirmDelete(selected.id)}
-                  >
-                    Xóa trang phục
+                    C&#7853;p nh&#7853;t trang ph&#7909;c
                   </button>
                 </>
               )}
               <button
-                style={{ marginTop: 8, padding: "10px 16px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", cursor: "pointer", width: "100%", fontWeight: 600 }}
+                style={{ padding: "10px 16px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#64748b", cursor: "pointer", width: "100%", fontWeight: 600, fontSize: 14 }}
                 onClick={() => setSelected(null)}
               >
                 Đóng
@@ -177,56 +196,11 @@ export default function CostumeListPage() {
 
         {/* Modal cập nhật - chỉ chủ */}
         {owner && editItem && (
-          <div style={modalOverlayStyle} onClick={() => setEditItem(null)}>
-            <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-              <h2 style={{ fontSize: 20, marginBottom: 16, color: "#1e293b" }}>Cập nhật trang phục</h2>
-              {[
-                { label: "Tên trang phục", key: "name" },
-                { label: "Giá thuê", key: "price" },
-                { label: "Size / Mô tả", key: "size" },
-              ].map(({ label, key }) => (
-                <div key={key} style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#334155", display: "block", marginBottom: 4 }}>{label}</label>
-                  <input
-                    value={(editItem as any)[key]}
-                    onChange={(e) => setEditItem({ ...editItem, [key]: e.target.value })}
-                    style={{ width: "100%", height: 38, border: "1px solid #e2e8f0", borderRadius: 8, padding: "0 12px", fontSize: 14, outline: "none", boxSizing: "border-box" }}
-                  />
-                </div>
-              ))}
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: "#334155", display: "block", marginBottom: 4 }}>Trạng thái</label>
-                <select
-                  value={editItem.status}
-                  onChange={(e) => setEditItem({ ...editItem, status: e.target.value as StatusValue })}
-                  style={{ width: "100%", height: 38, border: "1px solid #e2e8f0", borderRadius: 8, padding: "0 12px", fontSize: 14, outline: "none" }}
-                >
-                  {Object.values(STATUS).map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <button
-                style={{ marginTop: 8, padding: "10px 16px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", width: "100%", fontWeight: 600 }}
-                onClick={() => {
-                  costumeStore.update(editItem.id, {
-                    tenTP: editItem.name,
-                    giaThue: editItem.price,
-                    size: editItem.size,
-                    trangThai: editItem.status,
-                  });
-                  setEditItem(null);
-                  refreshCostumes();
-                }}
-              >
-                Lưu thay đổi
-              </button>
-              <button
-                style={{ marginTop: 8, padding: "10px 16px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", cursor: "pointer", width: "100%", fontWeight: 600 }}
-                onClick={() => setEditItem(null)}
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
+          <UpdateTrangphuc
+            maTP={editItem.id}
+            onClose={() => setEditItem(null)}
+            onSuccess={() => { setEditItem(null); refreshCostumes(); }}
+          />
         )}
         {alertMsg && <AlertModal message={alertMsg} onClose={() => setAlertMsg('')} />}
         {confirmDelete && (

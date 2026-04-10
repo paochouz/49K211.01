@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type CSSProperties } from "react";
 import { costumeStore } from "../mock/mockStore";
+import AlertModal from "./AlertModal";
 
 interface Props {
   onClose: () => void;
@@ -16,6 +17,7 @@ export default function AddCostumeModal({ onClose, onSuccess }: Props) {
     hinhAnh: null as File | null,
     hinhAnhPreview: "",
   });
+  const [alertMsg, setAlertMsg] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const maTP = costumeStore.nextCode();
@@ -48,16 +50,11 @@ export default function AddCostumeModal({ onClose, onSuccess }: Props) {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
     costumeStore.create({
-      tenTP: form.tenTP,
-      loaiTP: form.loaiTP,
-      giaThue: Number(form.giaThue),
-      size: form.size,
-      moTa: form.moTa,
-      hinhAnh: form.hinhAnhPreview || "",
-      trangThai: "Sẵn sàng",
+      tenTP: form.tenTP, loaiTP: form.loaiTP, giaThue: Number(form.giaThue),
+      size: form.size, moTa: form.moTa, hinhAnh: form.hinhAnhPreview || "", trangThai: "Sẵn sàng",
     });
     onSuccess();
-    onClose();
+    setAlertMsg("Thêm trang phục thành công!");
   };
 
   return (
@@ -137,6 +134,7 @@ export default function AddCostumeModal({ onClose, onSuccess }: Props) {
           <button onClick={handleSubmit} style={saveBtn}>Lưu</button>
         </div>
       </div>
+      {alertMsg && <AlertModal message={alertMsg} onClose={onClose} />}
     </div>
   );
 }

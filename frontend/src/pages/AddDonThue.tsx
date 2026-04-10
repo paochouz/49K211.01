@@ -727,7 +727,11 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
             />
           </div>
 
-          <button type="submit" style={primaryButtonStyle}>
+          <button type="submit" style={{
+            ...primaryButtonStyle,
+            opacity: (form.khachHang && items.length > 0) ? 1 : 0.45,
+            cursor: (form.khachHang && items.length > 0) ? 'pointer' : 'not-allowed',
+          }} disabled={!form.khachHang || items.length === 0}>
             {isEditMode ? "Lưu thay đổi" : "Tạo đơn"}
           </button>
 

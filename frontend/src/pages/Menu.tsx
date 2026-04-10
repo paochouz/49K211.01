@@ -1,10 +1,9 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, Users, Shirt, Settings, LogOut } from 'lucide-react';
+import { ClipboardList, Users, Shirt, Settings, LogOut } from 'lucide-react';
 import { isOwner } from '../hooks/useAuth';
 
 const allMenuItems = [
-  { name: 'Trang chủ', path: '/home', ownerOnly: false },
   { name: 'Quản lý đơn thuê', path: '/don-thue', ownerOnly: false },
   { name: 'Quản lý khách hàng', path: '/khach-hang', ownerOnly: false },
   { name: 'Quản lý trang phục', path: '/trang-phuc', ownerOnly: false },
@@ -12,7 +11,6 @@ const allMenuItems = [
 ];
 
 const menuIcons: Record<string, React.ReactNode> = {
-  '/home': <LayoutDashboard size={20} />,
   '/don-thue': <ClipboardList size={20} />,
   '/khach-hang': <Users size={20} />,
   '/trang-phuc': <Shirt size={20} />,
@@ -25,6 +23,8 @@ export default function Menu() {
   const owner = isOwner();
   const menuItems = allMenuItems.filter(item => !item.ownerOnly || owner);
 
+  const roleLabel = owner ? 'Chủ cửa hàng' : 'Nhân viên';
+
   const handleLogout = () => {
     localStorage.clear();
     window.location.href = '/';
@@ -35,6 +35,19 @@ export default function Menu() {
       <div style={styles.logoSection}>
         <div style={styles.logoIcon}>CT</div>
         <span style={styles.logoText}>Tiệm Cô Thắm</span>
+      </div>
+
+      {/* Role badge */}
+      <div style={{ margin: '0 8px 20px', textAlign: 'center' }}>
+        <span style={{
+          display: 'inline-block',
+          padding: '5px 16px',
+          borderRadius: '20px',
+          fontSize: '13px',
+          fontWeight: 600,
+          background: owner ? '#eff6ff' : '#f0fdf4',
+          color: owner ? '#2563eb' : '#16a34a',
+        }}>{roleLabel}</span>
       </div>
 
       <div style={styles.menuGroups}>

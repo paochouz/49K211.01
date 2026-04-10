@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Menu from './Menu';
 import AlertModal from '../components/AlertModal';
@@ -22,8 +22,8 @@ const CostumeReturns = () => {
         khachHang: {
           ten: order.customer,
           sdt: order.phone,
-          hinhThucCoc: 'Tiền mặt/chuyển khoản',
-          chiTietCoc: 'Không có',
+          hinhThucCoc: order.hinhThucCoc || 'Tiền mặt/chuyển khoản',
+          chiTietCoc: order.chiTietCoc || 'Không có',
           tienCocSo: Number(order.deposit.replace(/[^\d]/g, '')) || 0,
         },
         tongGiaTriDon: Number(order.total.replace(/[^\d]/g, '')) || 0,
@@ -85,140 +85,167 @@ const CostumeReturns = () => {
 
   const handleComplete = () => {
     orderStore.updateStatus(data.maDon, 'Đã trả');
-    // Cập nhật trạng thái trang phục về Sẵn sàng
     data.trangPhuc.forEach((item: any) => {
       costumeStore.update(item.id, {
         trangThai: item.status === 'Bình thường' ? 'Sẵn sàng' : item.status === 'Mất' ? 'Ngưng sử dụng' : 'Hư hỏng',
       });
     });
-    setAlertMsg('✅ Xử lý trả đồ thành công!');
+    setAlertMsg('Xử lý trả đồ thành công!');
     setTimeout(() => navigate('/don-thue'), 1500);
   };
 
-  const card: React.CSSProperties = { backgroundColor: 'white', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '24px', marginBottom: '20px' };
-  const label: React.CSSProperties = { color: '#334155', fontSize: '13px', marginBottom: '4px', fontWeight: 600 };
-  const value: React.CSSProperties = { color: '#0f172a', fontSize: '14px' };
-  const sectionTitle: React.CSSProperties = { marginTop: 0, marginBottom: '20px', fontSize: '16px', color: '#0f172a', fontWeight: 700 };
+  const card = { backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '24px', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' };
+  const lbl = { color: '#0F172A', fontSize: '13px', marginBottom: '4px', fontWeight: 600 };
+  const val = { color: '#0F172A', fontSize: '15px', fontWeight: 400 };
+  const title = { marginTop: 0, marginBottom: '16px', fontSize: '16px', color: '#0F172A', fontWeight: 700 };
 
-  if (loading) return (
+  if (loading || !data) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}><Menu /></aside>
-      <main style={{ marginLeft: '220px', padding: '24px', textAlign: 'center', color: '#64748b' }}>Đang tải dữ liệu...</main>
-    </div>
-  );
-
-  if (!data) return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}><Menu /></aside>
-      <main style={{ marginLeft: '220px', padding: '24px', textAlign: 'center', color: '#ef4444' }}>Không tìm thấy đơn hàng!</main>
+      <main style={{ marginLeft: '220px', padding: '24px', textAlign: 'center', color: '#64748b' }}>
+        {loading ? 'Đang tải...' : 'Không tìm thấy đơn hàng!'}
+      </main>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
       <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}>
         <Menu />
       </aside>
 
-      <main style={{ marginLeft: '220px', padding: '24px', overflowY: 'auto', fontFamily: 'sans-serif' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '24px', color: '#1e293b' }}>
-          Xử lý trả đồ & Quyết toán đơn
-        </h1>
+      <div style={{ marginLeft: '220px', display: 'flex', justifyContent: 'center', padding: '32px 24px' }}>
+        <main style={{ width: '100%', maxWidth: '860px', backgroundColor: '#F8FAFC', borderRadius: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB' }}>
 
-        {/* Thông tin đơn */}
-        <div style={card}>
-          <h3 style={sectionTitle}>Thông tin đơn hàng</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-            {[
-              ['Mã đơn hàng', data.maDon],
-              ['Khách hàng', data.khachHang.ten],
-              ['Số điện thoại', data.khachHang.sdt],
-              ['Hình thức cọc', data.khachHang.hinhThucCoc],
-              ['Chi tiết cọc', data.khachHang.chiTietCoc],
-              ['Hạn trả gốc', formatNgay(data.hanTra)],
-            ].map(([l, v]) => (
-              <div key={l}><div style={label}>{l}</div><div style={value}>{v}</div></div>
-            ))}
+          {/* Header */}
+          <div style={{ padding: '20px 32px', borderBottom: '1px solid #E5E7EB', backgroundColor: 'white' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0, color: '#0F172A' }}>Xử lý trả đồ & Quyết toán đơn</h1>
           </div>
-        </div>
 
-        {/* Kiểm kê */}
-        <div style={card}>
-          <h3 style={sectionTitle}>Kiểm kê trang phục trả</h3>
-          {data.trangPhuc.map((item: any) => (
-            <div key={item.id} style={{ display: 'flex', gap: '20px', padding: '16px', backgroundColor: '#F8FAFC', borderRadius: '12px', marginBottom: '12px', alignItems: 'center', border: '1px solid #f1f5f9' }}>
-              <img src={item.hinh} alt={item.ten} style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '8px' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, marginBottom: '10px', color: '#1e293b' }}>{item.ten}</div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <select value={item.status} onChange={(e) => handleStatusChange(item.id, e.target.value)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1' }}>
-                    <option>Bình thường</option>
-                    <option>Hư hỏng</option>
-                    <option>Mất</option>
-                  </select>
-                  <input placeholder="Ghi chú lỗi..." value={item.moTaLoi} disabled={item.status === 'Bình thường'} onChange={(e) => handleMoTaLoiChange(item.id, e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1' }} />
-                  <div style={{ position: 'relative' }}>
-                    <input value={item.phiHuHong.toLocaleString()} disabled={item.status === 'Bình thường'} onChange={(e) => handlePhiHuHongChange(item.id, e.target.value)} style={{ width: '140px', textAlign: 'right', padding: '8px 45px 8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontWeight: 'bold' }} />
-                    <span style={{ position: 'absolute', right: '12px', top: '9px', fontSize: '12px', fontWeight: 'bold', color: '#64748b' }}>VNĐ</span>
+          {/* Content */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
+
+            {/* Thông tin đơn */}
+            <div style={card}>
+              <h3 style={title}>Thông tin đơn hàng</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                {[
+                  ['Mã đơn hàng', data.maDon],
+                  ['Khách hàng', data.khachHang.ten],
+                  ['Số điện thoại', data.khachHang.sdt],
+                  ['Hình thức cọc', data.khachHang.hinhThucCoc],
+                  ['Chi tiết cọc', data.khachHang.chiTietCoc],
+                  ['Hạn trả gốc', formatNgay(data.hanTra)],
+                ].map(([l, v]) => (
+                  <div key={l}><div style={lbl}>{l}</div><div style={val}>{v}</div></div>
+                ))}
+              </div>
+            </div>
+
+            {/* Kiểm kê */}
+            <div style={card}>
+              <h3 style={title}>Kiểm kê trang phục trả</h3>
+              {data.trangPhuc.map((item: any) => (
+                <div key={item.id} style={{ display: 'flex', gap: '20px', padding: '16px', backgroundColor: '#F8FAFC', borderRadius: '12px', marginBottom: '12px', alignItems: 'center', border: '1px solid #E5E7EB' }}>
+                  <img src={item.hinh} alt={item.ten} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/80x80?text=TP'; }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, marginBottom: '12px', color: '#0F172A', fontSize: '15px' }}>{item.ten}</div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <select value={item.status} onChange={(e) => handleStatusChange(item.id, e.target.value)} style={{ height: '40px', padding: '0 12px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#fff' }}>
+                        <option>Bình thường</option>
+                        <option>Hư hỏng</option>
+                        <option>Mất</option>
+                      </select>
+                      <input placeholder="Ghi chú lỗi" value={item.moTaLoi} disabled={item.status === 'Bình thường'} onChange={(e) => handleMoTaLoiChange(item.id, e.target.value)} style={{ height: '40px', flex: 1, padding: '0 12px', borderRadius: '8px', border: '1px solid #E5E7EB' }} />
+                      <div style={{ position: 'relative' }}>
+                        <input value={item.phiHuHong.toLocaleString()} disabled={item.status === 'Bình thường'} onChange={(e) => handlePhiHuHongChange(item.id, e.target.value)} style={{ height: '40px', width: '130px', textAlign: 'right', padding: '0 45px 0 12px', borderRadius: '8px', border: '1px solid #E5E7EB', fontWeight: 'bold' }} />
+                        <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', fontWeight: 'bold', color: '#64748B' }}>VNĐ</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quyết toán */}
+            <div style={{ ...card, border: '1px solid #2563EB' }}>
+              <h3 style={title}>Quyết toán tài chính</h3>
+
+              {/* Ngày trả thực tế */}
+              <div style={{ marginBottom: '16px', padding: '12px 16px', backgroundColor: '#F0F7FF', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 600, color: '#2563EB', fontSize: '14px' }}>Ngày trả thực tế:</span>
+                <div style={{ position: 'relative', width: '180px' }}>
+                  <input type="date" value={ngayTraThucTe} onChange={(e) => setNgayTraThucTe(e.target.value)}
+                    style={{ height: '36px', width: '100%', padding: '0 8px', borderRadius: '6px', border: '1px solid #2563EB', backgroundColor: 'white', opacity: 0, position: 'absolute', top: 0, left: 0, cursor: 'pointer', zIndex: 1 }} />
+                  <div style={{ height: '36px', width: '100%', padding: '0 10px', borderRadius: '6px', border: '1px solid #2563EB', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none' }}>
+                    <span style={{ color: '#0F172A', fontWeight: 600, fontSize: '14px' }}>{formatNgay(ngayTraThucTe)}</span>
+                    <span style={{ fontSize: '16px' }}>📅</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Các dòng tính toán */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { label: 'Tổng giá trị thuê', value: `${data.tongGiaTriDon.toLocaleString()} VNĐ`, color: '#0F172A' },
+                  { label: 'Đã đặt cọc', value: `-${data.khachHang.tienCocSo.toLocaleString()} VNĐ`, color: '#22C55E' },
+                  { label: 'Phí trả trễ', value: `${phiTraTre.toLocaleString()} VNĐ`, color: phiTraTre > 0 ? '#EF4444' : '#0F172A' },
+                  { label: 'Phí hư hỏng', value: `${tongPhiHuHong.toLocaleString()} VNĐ`, color: tongPhiHuHong > 0 ? '#EF4444' : '#0F172A' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: '#64748B', fontSize: '15px' }}>{label}</span>
+                    <b style={{ color, fontSize: '15px' }}>{value}</b>
+                  </div>
+                ))}
+
+                {/* Tổng phát sinh */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #E5E7EB', paddingTop: '12px' }}>
+                  <span style={{ fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>Tổng phát sinh</span>
+                  <b style={{ color: '#EF4444', fontSize: '18px' }}>{tongPhatSinh.toLocaleString()} VNĐ</b>
+                </div>
+
+                {/* Tiền phải thu/trả */}
+                <div style={{ padding: '16px 20px', borderRadius: '12px', backgroundColor: ketQua >= 0 ? '#FFF1F2' : '#F0FDF4', border: `1px solid ${ketQua >= 0 ? '#EF4444' : '#22C55E'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, fontSize: '15px', color: ketQua >= 0 ? '#EF4444' : '#22C55E' }}>
+                      {ketQua >= 0 ? 'Tiền khách phải trả thêm' : 'Tiền hoàn lại cho khách'}
+                    </span>
+                    <span style={{ fontWeight: 900, color: ketQua >= 0 ? '#EF4444' : '#22C55E', fontSize: '22px' }}>
+                      {Math.abs(ketQua).toLocaleString()} VNĐ
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Quyết toán */}
-        <div style={{ ...card, border: '2px solid #2563EB' }}>
-          <h3 style={sectionTitle}>Quyết toán tài chính</h3>
-          <div style={{ marginBottom: '20px', padding: '14px', backgroundColor: '#F0F7FF', borderRadius: '12px' }}>
-            <label style={{ fontWeight: 600, marginRight: '12px', color: '#334155', fontSize: 13 }}>Ngày trả thực tế:</label>
-            <input type="date" value={ngayTraThucTe} onChange={(e) => setNgayTraThucTe(e.target.value)} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #CBD5E1' }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              ['Tổng giá trị thuê', `${data.tongGiaTriDon.toLocaleString()} VNĐ`],
-              ['Đã đặt cọc', `-${data.khachHang.tienCocSo.toLocaleString()} VNĐ`],
-              ['Phí phạt trả trễ', `${phiTraTre.toLocaleString()} VNĐ`],
-              ['Phí phạt hư hỏng', `${tongPhiHuHong.toLocaleString()} VNĐ`],
-            ].map(([l, v]) => (
-              <div key={l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}><span>{l}:</span><b>{v}</b></div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CBD5E1', paddingTop: '12px' }}>
-              <span style={{ fontWeight: 700 }}>Tổng chi phí phát sinh:</span>
-              <b style={{ color: '#E11D48', fontSize: '18px' }}>{tongPhatSinh.toLocaleString()} VNĐ</b>
-            </div>
-            <div style={{ padding: '20px', borderRadius: '14px', backgroundColor: ketQua >= 0 ? '#FFF1F2' : '#F0FDF4' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, color: ketQua >= 0 ? '#BE123C' : '#166534', fontSize: 14 }}>
-                  {ketQua >= 0 ? 'SỐ TIỀN KHÁCH THANH TOÁN THÊM' : 'SỐ TIỀN TRẢ LẠI CHO KHÁCH'}
-                </span>
-                <span style={{ fontSize: '24px', fontWeight: 900, color: ketQua >= 0 ? '#BE123C' : '#15803d' }}>
-                  {Math.abs(ketQua).toLocaleString()} VNĐ
+            {/* Xác nhận giấy tờ - chỉ hiện khi hình thức cọc là giấy tờ */}
+            {data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && (
+              <div style={{ padding: '12px 16px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: '10px', background: '#fff' }} onClick={() => setDaTraGiayTo(!daTraGiayTo)}>
+                <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: daTraGiayTo ? '6px solid #2563EB' : '2px solid #CBD5E1', backgroundColor: '#fff', transition: 'all 0.2s', flexShrink: 0 }} />
+                <span style={{ color: '#0F172A', fontSize: '14px', fontWeight: 500 }}>
+                  Đã trả lại giấy tờ cho khách <span style={{ color: '#EF4444' }}>*</span>
                 </span>
               </div>
-            </div>
+            )}
           </div>
-        </div>
 
-        {data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && (
-          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => setDaTraGiayTo(!daTraGiayTo)}>
-            <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: daTraGiayTo ? '6px solid #2563EB' : '2px solid #CBD5E1', backgroundColor: '#fff', transition: 'all 0.2s', flexShrink: 0 }} />
-            <span style={{ fontSize: '14px', color: '#334155' }}>Đã trả lại giấy tờ tùy thân cho khách hàng <span style={{ color: 'red' }}>*</span></span>
+          {/* Footer */}
+          <div style={{ padding: '16px 32px', borderTop: '1px solid #E5E7EB', backgroundColor: 'white', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <button onClick={() => navigate('/don-thue')} style={{ height: '44px', padding: '0 28px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#F8FAFC', fontWeight: 500, cursor: 'pointer', color: '#64748B', fontSize: '14px' }}>
+              Hủy
+            </button>
+            <button
+              disabled={data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && !daTraGiayTo}
+              onClick={handleComplete}
+              style={{ height: '44px', padding: '0 40px', borderRadius: '8px', border: 'none', backgroundColor: '#2563EB', color: 'white', fontWeight: 700, fontSize: '14px', opacity: (data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && !daTraGiayTo) ? 0.5 : 1, cursor: (data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && !daTraGiayTo) ? 'not-allowed' : 'pointer' }}
+            >
+              Hoàn tất
+            </button>
           </div>
-        )}
+        </main>
+      </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-          <button onClick={() => navigate('/don-thue')} style={{ padding: '10px 24px', borderRadius: '10px', border: '1px solid #CBD5E1', backgroundColor: 'white', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Hủy bỏ</button>
-          <button
-            disabled={data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && !daTraGiayTo}
-            onClick={handleComplete}
-            style={{ padding: '10px 32px', borderRadius: '10px', border: 'none', backgroundColor: '#2563EB', color: 'white', fontWeight: 600, fontSize: 14, opacity: (data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && !daTraGiayTo) ? 0.5 : 1, cursor: (data.khachHang.hinhThucCoc === 'Giấy tờ tùy thân' && !daTraGiayTo) ? 'not-allowed' : 'pointer' }}
-          >
-            HOÀN TẤT
-          </button>
-        </div>
-        {alertMsg && <AlertModal message={alertMsg} onClose={() => setAlertMsg('')} />}
-      </main>
+      {alertMsg && <AlertModal message={alertMsg} onClose={() => setAlertMsg('')} />}
     </div>
   );
 };

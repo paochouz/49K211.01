@@ -146,7 +146,7 @@ export default function RentalOrdersPage() {
 
       <main className="ml-[220px] p-6 space-y-6">
         <section className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-slate-900">Xem hóa đơn</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Quản lý đơn thuê</h1>
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}

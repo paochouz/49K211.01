@@ -34,6 +34,8 @@ export type Order = {
   status: OrderStatus;
   deposit: string;
   total: string;
+  hinhThucCoc?: string;
+  chiTietCoc?: string;
 };
 
 export type PenaltyConfig = {
@@ -48,6 +50,7 @@ const customers: Customer[] = [
   { maKH: 'KH000001', tenKH: 'Nguyễn Văn An', soDienThoai: '0912345678', diaChi: '123 Lê Lợi, TP.HCM' },
   { maKH: 'KH000002', tenKH: 'Trần Thị Bình', soDienThoai: '0987654321', diaChi: '45 Nguyễn Huệ, Hà Nội' },
   { maKH: 'KH000003', tenKH: 'Lê Minh Châu', soDienThoai: '0909111222', diaChi: '78 Trần Phú, Đà Nẵng' },
+  { maKH: 'KH000004', tenKH: 'Phạm Ngọc Ánh', soDienThoai: '0933222111', diaChi: '' },
 ];
 
 const costumes: Costume[] = [
@@ -55,12 +58,15 @@ const costumes: Costume[] = [
   { maTP: 'TP000002', tenTP: 'Vest nam lịch lãm', loaiTP: 'Vest', giaThue: 200000, size: 'L', moTa: 'Vest đen sang trọng', hinhAnh: '/images/vest.jpeg', trangThai: 'Đang thuê' },
   { maTP: 'TP000003', tenTP: 'Váy dạ hội đỏ', loaiTP: 'Váy dạ hội', giaThue: 300000, size: 'S', moTa: 'Váy dạ hội đỏ rực', hinhAnh: '/images/vay_da_hoi.jpg', trangThai: 'Đang thuê' },
   { maTP: 'TP000004', tenTP: 'Hanbok Hàn Quốc', loaiTP: 'Cosplay', giaThue: 250000, size: 'M', moTa: 'Hanbok truyền thống', hinhAnh: '/images/hanbok.jpg', trangThai: 'Hư hỏng' },
+  { maTP: 'TP000005', tenTP: 'Áo dài cách tân xanh', loaiTP: 'Áo dài', giaThue: 180000, size: 'S', moTa: 'Áo dài cách tân màu xanh lá', hinhAnh: '/images/ao_dai_xanh.png', trangThai: 'Sẵn sàng' },
+  { maTP: 'TP000006', tenTP: 'Vest nữ trắng', loaiTP: 'Vest', giaThue: 220000, size: 'M', moTa: 'Vest nữ màu trắng thanh lịch', hinhAnh: '/images/vest_nu.jpg', trangThai: 'Đang thuê' },
 ];
 
 const orders: Order[] = [
   { id: '1', invoiceNo: 'HDT000001', customer: 'Nguyễn Văn An', phone: '0912345678', item: 'Vest nam lịch lãm', rentedAt: '01/06/2026', dueDate: '05/06/2026', status: 'Đang thuê', deposit: '200.000đ', total: '600.000đ' },
   { id: '2', invoiceNo: 'HDT000002', customer: 'Trần Thị Bình', phone: '0987654321', item: 'Áo dài truyền thống', rentedAt: '03/06/2026', dueDate: '07/06/2026', status: 'Chưa cọc đơn', deposit: '0đ', total: '450.000đ' },
   { id: '3', invoiceNo: 'HDT000003', customer: 'Lê Minh Châu', phone: '0909111222', item: 'Váy dạ hội đỏ', rentedAt: '28/05/2026', dueDate: '01/06/2026', status: 'Trễ hạn', deposit: '300.000đ', total: '900.000đ' },
+  { id: '4', invoiceNo: 'HDT000004', customer: 'Phạm Ngọc Ánh', phone: '0933222111', item: 'Vest nữ trắng', rentedAt: '05/06/2026', dueDate: '10/06/2026', status: 'Đang thuê', deposit: '0đ', total: '220.000đ', hinhThucCoc: 'Giấy tờ tùy thân', chiTietCoc: 'CCCD - 079204012345' },
 ];
 
 let penaltyConfig: PenaltyConfig = {
@@ -112,7 +118,6 @@ export const orderStore = {
   nextCode: () => nextCode('HDT', orders as any, 'invoiceNo'),
   create: (o: Omit<Order, 'id'>) => {
     orders.unshift({ ...o, id: String(Date.now()) });
-    // Cập nhật trạng thái trang phục
     o.item.split(', ').forEach((name) => {
       const c = costumes.find((c) => c.tenTP === name);
       if (c) c.trangThai = 'Đang thuê';
@@ -125,6 +130,15 @@ export const orderStore = {
   update: (invoiceNo: string, patch: Partial<Order>) => {
     const idx = orders.findIndex((o) => o.invoiceNo === invoiceNo);
     if (idx !== -1) orders[idx] = { ...orders[idx], ...patch };
+  },
+  // Lấy thông tin thuê của 1 trang phục (nếu đang thuê)
+  getRentalInfo: (tenTP: string) => {
+    const order = orders.find(
+      (o) => (o.status === 'Đang thuê' || o.status === 'Trễ hạn') &&
+        o.item.split(', ').map(s => s.trim()).includes(tenTP)
+    );
+    if (!order) return null;
+    return { customer: order.customer, dueDate: order.dueDate };
   },
 };
 

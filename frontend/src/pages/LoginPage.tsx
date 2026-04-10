@@ -19,7 +19,7 @@ export default function LoginPage() {
       setLoading(true);
       const user = authStore.login(taiKhoan.trim(), matKhau);
       localStorage.setItem("user", JSON.stringify(user));
-      navigate("/home");
+      navigate("/don-thue");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Có lỗi xảy ra");
     } finally {
