@@ -1,18 +1,26 @@
 import { Router } from "express";
-import { createCostume, listCostumes } from "../controllers/costumeController";
+import {
+  createCostume,
+  getCostumeById,
+  updateCostume,
+  deleteCostume,
+} from "../controllers/costumeController";
+import { getCostumes } from "../controllers/CostumeListController";
 import { validateCreateCostume } from "../validators/costumeValidator";
-import multer from "multer";
 
 export const costumeRoutes = Router();
 
-const upload = multer({ dest: "uploads/" });
+// Danh sách trang phục
+costumeRoutes.get("/", getCostumes);
 
-// GET danh sách
-costumeRoutes.get("/", listCostumes);
+// Thêm mới trang phục
+costumeRoutes.post("/", validateCreateCostume, createCostume);
 
-// ✅ POST duy nhất (gộp tất cả lại)
-costumeRoutes.post(
-  "/",
-  upload.single("hinhAnh"),
-  createCostume
-);
+// Lấy chi tiết 1 trang phục
+costumeRoutes.get("/:id", getCostumeById);
+
+// Cập nhật trang phục
+costumeRoutes.put("/:id", updateCostume);
+
+// Xóa trang phục
+costumeRoutes.delete("/:id", deleteCostume);
