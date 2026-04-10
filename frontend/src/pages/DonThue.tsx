@@ -18,6 +18,8 @@ export type OrderItem = {
   status: OrderStatus;
   deposit: string;
   total: string;
+  hinhThucCoc?: string;
+  ghiChuGiayTo?: string;
 };
 
 type StatusBadgeProps = {

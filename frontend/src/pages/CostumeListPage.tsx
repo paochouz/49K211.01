@@ -11,7 +11,6 @@ const STATUS = {
   READY: "Sẵn sàng",
   RENTED: "Đang thuê",
   BROKEN: "Hư hỏng",
-  OVERDUE: "Trễ hạn",
 } as const;
 
 type StatusValue = (typeof STATUS)[keyof typeof STATUS];
@@ -31,7 +30,6 @@ const statusColor: Record<string, string> = {
   [STATUS.READY]: "#22C55E",
   [STATUS.RENTED]: "#F59E0B",
   [STATUS.BROKEN]: "#EF4444",
-  [STATUS.OVERDUE]: "#EF4444",
 };
 
 export default function CostumeListPage() {
@@ -164,7 +162,7 @@ export default function CostumeListPage() {
               </div>
 
               {/* Lịch đang thuê */}
-              {(selected.status === "Đang thuê" || selected.status === "Trễ hạn") && (() => {
+              {(selected.status === "Đang thuê" || (selected.status as string) === "Trễ hạn") && (() => {
                 const info = orderStore.getRentalInfo(selected.name);
                 return info ? (
                   <div style={{ backgroundColor: "#fef3c7", padding: "12px 14px", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#92400e" }}>

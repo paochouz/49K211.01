@@ -300,10 +300,10 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     maDon: initialData?.invoiceNo ?? "",
     invoiceNumber: 0,
     khachHang: initialCustomer,
-    hinhThucCoc: "TIEN_MAT_CHUYEN_KHOAN",
+    hinhThucCoc: (initialData as any)?.hinhThucCoc === 'Giấy tờ tùy thân' ? "GIAY_TO" : "TIEN_MAT_CHUYEN_KHOAN",
     tienCoc: initialData ? Number(initialData.deposit.replace(/[^\d]/g, "")) : 0,
     trangThai: initialData?.status ?? "Chưa cọc đơn",
-    ghiChuGiayTo: "",
+    ghiChuGiayTo: (initialData as any)?.ghiChuGiayTo || "",
   }));
 
   const [tienCocTouched, setTienCocTouched] = useState(false);
@@ -511,6 +511,8 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
         status: 'Chưa cọc đơn',
         deposit: `${form.tienCoc.toLocaleString('vi-VN')}đ`,
         total: `${derived.tongDonThue.toLocaleString('vi-VN')}đ`,
+        hinhThucCoc: form.hinhThucCoc === 'GIAY_TO' ? 'Giấy tờ tùy thân' : 'Tiền mặt/chuyển khoản',
+        ghiChuGiayTo: form.ghiChuGiayTo,
       });
       setMessage("Tạo đơn thành công!");
       onSuccess?.();
@@ -727,10 +729,10 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
             <label style={labelStyle}>Ghi chú giấy tờ</label>
             <input
               placeholder='Ví dụ: "CCCD số 123456"'
-              disabled={form.hinhThucCoc !== "GIAY_TO"}
+              disabled={form.hinhThucCoc !== "GIAY_TO" || isLocked}
               value={form.ghiChuGiayTo}
               onChange={(e) => setForm((p) => ({ ...p, ghiChuGiayTo: e.target.value }))}
-              style={inputStyle}
+              style={{ ...inputStyle, ...((form.hinhThucCoc !== "GIAY_TO" || isLocked) ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed' } : {}) }}
             />
           </div>
 

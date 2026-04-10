@@ -112,7 +112,12 @@ export default function ManageCustomersPage() {
                   value={(newCustomer as any)[key]}
                   disabled={disabled}
                   placeholder={placeholder}
-                  onChange={(e) => setNewCustomer((p) => ({ ...p, [key]: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Chặn ký tự đặc biệt cho trường tên
+                    if (key === 'tenKH' && /[^a-zA-ZÀ-ỹ\s]/.test(val)) return;
+                    setNewCustomer((p) => ({ ...p, [key]: val }));
+                  }}
                   style={{ ...inputStyle, background: disabled ? '#f1f5f9' : '#fff', cursor: disabled ? 'not-allowed' : 'text' }}
                 />
               </div>

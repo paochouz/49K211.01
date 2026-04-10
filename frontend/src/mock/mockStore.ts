@@ -36,6 +36,7 @@ export type Order = {
   total: string;
   hinhThucCoc?: string;
   chiTietCoc?: string;
+  ghiChuGiayTo?: string;
 };
 
 export type PenaltyConfig = {
