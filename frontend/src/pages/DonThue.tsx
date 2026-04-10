@@ -148,7 +148,7 @@ export default function RentalOrdersPage() {
           </button>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="grid gap-4 grid-cols-2 xl:grid-cols-5">
           <StatCard label="Tổng hóa đơn" value={stats.total} />
           <StatCard label="Chưa cọc đơn" value={stats.unpaidDeposit} />
           <StatCard label="Đang thuê" value={stats.renting} />
@@ -331,7 +331,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 min-w-0">
       <p className="text-sm text-slate-500">{label}</p>
       <p className="text-3xl font-bold text-slate-900">{value}</p>
     </div>
