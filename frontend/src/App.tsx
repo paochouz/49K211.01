@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage";
 import CustomerCreatePage from "./pages/CustomerCreatePage";
 import CostumeCreatePage from "./pages/CostumeCreatePage";
 import CostumeListPage from "./pages/CostumeListPage";
+import UpdateTrangPhuc from "./pages/UpdateTrangphuc";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/customers/create" element={<CustomerCreatePage />} />
         <Route path="/costumes/create" element={<CostumeCreatePage />} />
         <Route path="/costumes" element={<CostumeListPage />} />
+        <Route path="/costumes/:id/edit" element={<UpdateTrangPhuc />} />
       </Routes>
     </BrowserRouter>
   );
