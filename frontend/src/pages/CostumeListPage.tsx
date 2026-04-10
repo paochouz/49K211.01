@@ -39,25 +39,20 @@ export default function CostumeListPage() {
   const [alertMsg, setAlertMsg] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const mapCostume = (c: any) => ({
+    id: c.maTP, name: c.tenTP, price: c.giaThue,
+    size: c.moTa ? `${c.size} - ${c.moTa}` : c.size,
+    status: c.trangThai as StatusValue,
+    image: c.hinhAnh, renter: undefined, returnDate: undefined,
+  });
+
   const [costumes, setCostumes] = useState<CostumeItem[]>(() =>
-    costumeStore.list().map((c) => ({
-      id: c.maTP, name: c.tenTP, price: c.giaThue,
-      size: c.moTa ? `${c.size} - ${c.moTa}` : c.size,
-      status: (c.trangThai === 'Dang thue' ? 'Đang thuê' : c.trangThai) as StatusValue,
-      image: c.hinhAnh, renter: undefined, returnDate: undefined,
-    }))
+    costumeStore.list().map(mapCostume)
   );
 
   const owner = isOwner();
 
-  const refreshCostumes = () => setCostumes(
-    costumeStore.list().map((c) => ({
-      id: c.maTP, name: c.tenTP, price: c.giaThue,
-      size: c.moTa ? `${c.size} - ${c.moTa}` : c.size,
-      status: (c.trangThai === 'Dang thue' ? 'Đang thuê' : c.trangThai) as StatusValue,
-      image: c.hinhAnh, renter: undefined, returnDate: undefined,
-    }))
-  );
+  const refreshCostumes = () => setCostumes(costumeStore.list().map(mapCostume));
 
   const handleDelete = (id: string) => {
     costumeStore.delete(id);

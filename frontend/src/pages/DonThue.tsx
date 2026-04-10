@@ -120,7 +120,7 @@ export default function RentalOrdersPage() {
     if (order) {
       order.item.split(', ').forEach(name => {
         const c = costumeStore.list().find(c => c.tenTP === name.trim());
-        if (c) costumeStore.update(c.maTP, { trangThai: 'Dang thue' });
+        if (c) costumeStore.update(c.maTP, { trangThai: 'Đang thuê' });
       });
     }
     const updated = orderStore.list();
