@@ -52,8 +52,8 @@ const customers: Customer[] = [
 
 const costumes: Costume[] = [
   { maTP: 'TP000001', tenTP: 'Áo dài truyền thống', loaiTP: 'Áo dài', giaThue: 150000, size: 'M', moTa: 'Áo dài lụa cao cấp', hinhAnh: '/images/ao_dai.png', trangThai: 'Sẵn sàng' },
-  { maTP: 'TP000002', tenTP: 'Vest nam lịch lãm', loaiTP: 'Vest', giaThue: 200000, size: 'L', moTa: 'Vest đen sang trọng', hinhAnh: '/images/vest.jpeg', trangThai: 'Đang thuê' },
-  { maTP: 'TP000003', tenTP: 'Váy dạ hội đỏ', loaiTP: 'Váy dạ hội', giaThue: 300000, size: 'S', moTa: 'Váy dạ hội đỏ rực', hinhAnh: '/images/vay_da_hoi.jpg', trangThai: 'Sẵn sàng' },
+  { maTP: 'TP000002', tenTP: 'Vest nam lịch lãm', loaiTP: 'Vest', giaThue: 200000, size: 'L', moTa: 'Vest đen sang trọng', hinhAnh: '/images/vest.jpeg', trangThai: 'Dang thue' },
+  { maTP: 'TP000003', tenTP: 'Váy dạ hội đỏ', loaiTP: 'Váy dạ hội', giaThue: 300000, size: 'S', moTa: 'Váy dạ hội đỏ rực', hinhAnh: '/images/vay_da_hoi.jpg', trangThai: 'Dang thue' },
   { maTP: 'TP000004', tenTP: 'Hanbok Hàn Quốc', loaiTP: 'Cosplay', giaThue: 250000, size: 'M', moTa: 'Hanbok truyền thống', hinhAnh: '/images/hanbok.jpg', trangThai: 'Hư hỏng' },
 ];
 
@@ -121,6 +121,10 @@ export const orderStore = {
   updateStatus: (invoiceNo: string, status: OrderStatus) => {
     const o = orders.find((o) => o.invoiceNo === invoiceNo);
     if (o) o.status = status;
+  },
+  update: (invoiceNo: string, patch: Partial<Order>) => {
+    const idx = orders.findIndex((o) => o.invoiceNo === invoiceNo);
+    if (idx !== -1) orders[idx] = { ...orders[idx], ...patch };
   },
 };
 

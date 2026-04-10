@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Menu from './Menu';
 import AddDonThue from './AddDonThue';
-import { orderStore } from '../mock/mockStore';
+import { orderStore, costumeStore } from '../mock/mockStore';
 
 type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
 
@@ -115,6 +115,14 @@ export default function RentalOrdersPage() {
 
   const handleDeposit = (invoiceNo: string) => {
     orderStore.updateStatus(invoiceNo, 'Đang thuê');
+    // Cập nhật trạng thái trang phục → Đang thuê
+    const order = orderStore.list().find(o => o.invoiceNo === invoiceNo);
+    if (order) {
+      order.item.split(', ').forEach(name => {
+        const c = costumeStore.list().find(c => c.tenTP === name.trim());
+        if (c) costumeStore.update(c.maTP, { trangThai: 'Dang thue' });
+      });
+    }
     const updated = orderStore.list();
     setOrders(updated);
     setFilteredOrders(updated);
@@ -286,6 +294,7 @@ export default function RentalOrdersPage() {
         <AddDonThue
           onClose={() => setEditingOrder(null)}
           initialData={editingOrder}
+          onSuccess={() => { fetchOrders(); setEditingOrder(null); }}
         />
       )}
 

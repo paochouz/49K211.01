@@ -307,17 +307,19 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
 
   const [items, setItems] = useState<RentItem[]>(() => {
     if (!initialData) return [];
-    return [
-      {
-        id: String(Date.now()),
-        costumeId: undefined,
-        tenTP: initialData.item,
-        size: "",
-        donGia: Number(initialData.total.replace(/[^\d]/g, "")),
+    const names = initialData.item.split(', ').map(n => n.trim()).filter(Boolean);
+    return names.map((name) => {
+      const costume = costumeStore.list().find(c => c.tenTP === name);
+      return {
+        id: String(Date.now() + Math.random()),
+        costumeId: costume?.maTP,
+        tenTP: name,
+        size: costume?.size || "",
+        donGia: costume?.giaThue || 0,
         ngayThue: initialData.rentedAt,
         ngayTra: initialData.dueDate,
-      },
-    ];
+      };
+    });
   });
 
   const [message, setMessage] = useState("");
@@ -384,7 +386,9 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     });
   }, [customerKeyword, customers]);
 
-  const mockCostumes = costumeStore.list().map(c => ({ id: c.maTP, tenTP: c.tenTP, size: c.size, donGia: c.giaThue }));
+  const mockCostumes = costumeStore.list()
+    .filter(c => c.trangThai === 'Sẵn sàng')
+    .map(c => ({ id: c.maTP, tenTP: c.tenTP, size: c.size, donGia: c.giaThue }));
 
   const filteredCostumes = useMemo(() => {
     const kw = costumeKeyword.trim().toLowerCase();
@@ -478,7 +482,18 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     }
 
     if (isEditMode) {
+      orderStore.update(form.maDon, {
+        customer: form.khachHang!.tenKH,
+        phone: form.khachHang!.soDienThoai,
+        item: items.map((it) => it.tenTP).join(', '),
+        rentedAt: items[0]?.ngayThue || '',
+        dueDate: items[items.length - 1]?.ngayTra || '',
+        deposit: `${form.tienCoc.toLocaleString('vi-VN')}đ`,
+        total: `${derived.tongDonThue.toLocaleString('vi-VN')}đ`,
+        status: form.trangThai as OrderStatus,
+      });
       setMessage("Cập nhật đơn thành công!");
+      onSuccess?.();
       return;
     }
 
