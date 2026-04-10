@@ -120,7 +120,7 @@ export default function CostumeListPage() {
               style={cardStyle}
               onClick={() => setSelected(costumes.find(c => c.id === item.id) || item)}
             >
-              <img src={item.image} alt="" style={imageStyle} />
+              <img src={item.image} alt="" style={imageStyle} onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/80x80?text=TP'; }} />
               <div>
                 <h3 style={{ fontSize: 15, margin: 0, color: "#1e293b", fontWeight: 600 }}>{item.name}</h3>
                 <p style={{ fontSize: 13, color: "#64748b", margin: "4px 0" }}>{item.size}</p>
