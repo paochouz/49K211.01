@@ -7,4 +7,4 @@ startCommand = "cd frontend && npx serve -s dist -l $PORT"
 restartPolicyType = "ON_FAILURE"
 
 [nixpacks.variables]
-NODE_VERSION = "22"
+NODE_VERSION = "20"
