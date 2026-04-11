@@ -116,7 +116,7 @@ export default function CostumeListPage() {
               style={cardStyle}
               onClick={() => setSelected(costumes.find(c => c.id === item.id) || item)}
             >
-              <img src={item.image} alt="" style={imageStyle} onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/80x80?text=TP'; }} />
+              <img src={item.image || undefined} alt="" style={imageStyle} onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/80x80?text=TP'; }} />
               <div>
                 <h3 style={{ fontSize: 15, margin: 0, color: "#1e293b", fontWeight: 600 }}>{item.name}</h3>
                 <p style={{ fontSize: 13, color: "#64748b", margin: "4px 0" }}>{item.size}</p>
@@ -136,7 +136,7 @@ export default function CostumeListPage() {
               {/* Layout: hình trái, info phải */}
               <div style={{ display: "flex", gap: 20, marginBottom: 16 }}>
                 <img
-                  src={selected.image || '/images/ao_dai.png'}
+                  src={selected.image || undefined}
                   alt={selected.name}
                   style={{ width: 140, height: 140, borderRadius: 12, objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }}
                   onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/140x140?text=TP'; }}

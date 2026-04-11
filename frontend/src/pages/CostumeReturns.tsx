@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Menu from './Menu';
 import AlertModal from '../components/AlertModal';
-import { orderStore, costumeStore } from '../mock/mockStore';
+import { orderStore, costumeStore, penaltyStore } from '../mock/mockStore';
 
 const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: () => void }) => {
   const params = useParams<{ maDon: string }>();
@@ -73,10 +73,13 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
 
   const tinhPhiTraTre = () => {
     if (!data) return 0;
+    const penalty = penaltyStore.get();
+    if (!penalty.trangThaiApDung) return 0;
     const han = new Date(data.hanTra);
     const thuc = new Date(ngayTraThucTe);
     const diffDays = Math.ceil((thuc.getTime() - han.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays * (data.tongGiaTriDon * 0.1) : 0;
+    const rate = (penalty.tyLePhatQuaHan || 0) / 100;
+    return diffDays > 0 ? diffDays * (data.tongGiaTriDon * rate) : 0;
   };
 
   const phiTraTre = tinhPhiTraTre();

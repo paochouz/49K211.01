@@ -31,6 +31,7 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
   const [errors, setErrors] = useState<{ ten?: string; giaThue?: string }>({});
   const [previewImage, setPreviewImage] = useState<string>(costume?.hinhAnh || '');
   const [alertMsg, setAlertMsg] = useState('');
+  const [alertIsSuccess, setAlertIsSuccess] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +47,7 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
   const handleSave = () => {
     const newErrors: typeof errors = {};
     if (!formData.ten.trim()) newErrors.ten = 'T\u00EAn kh\u00F4ng \u0111\u01B0\u1EE3c \u0111\u1EC3 tr\u1ED1ng';
-    if (!formData.giaThue.trim()) newErrors.giaThue = 'Gi\u00E1 thu\u00EA kh\u00F4ng \u0111\u01B0\u1EE3c \u0111\u1EC3 tr\u1ED1ng';
+    if (!formData.giaThue.trim() || Number(formData.giaThue) <= 0) { setAlertMsg('L\u01B0u kh\u00F4ng th\u00E0nh c\u00F4ng: Gi\u00E1 thu\u00EA ph\u1EA3i l\u1EDBn h\u01A1n 0'); return; }
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
     costumeStore.update(maTP, {
@@ -59,6 +60,7 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
       hinhAnh: previewImage,
     });
     setAlertMsg('L\u01B0u thay \u0111\u1ED5i th\u00E0nh c\u00F4ng!');
+    setAlertIsSuccess(true);
   };
 
   const handleDelete = () => {
@@ -177,7 +179,7 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
         </div>
       </div>
 
-      {alertMsg && <AlertModal message={alertMsg} onClose={() => { setAlertMsg(''); onSuccess(); onClose(); }} />}
+      {alertMsg && <AlertModal message={alertMsg} onClose={() => { if (alertIsSuccess) { onSuccess(); onClose(); } setAlertMsg(''); setAlertIsSuccess(false); }} />}
       {confirmDelete && <ConfirmModal message="X&#225;c nh&#7853;n x&#243;a trang ph&#7909;c n&#224;y?" onConfirm={handleDelete} onCancel={() => setConfirmDelete(false)} />}
     </div>
   );

@@ -64,10 +64,10 @@ const costumes: Costume[] = [
 ];
 
 const orders: Order[] = [
-  { id: '1', invoiceNo: 'HDT000001', customer: 'Nguyễn Văn An', phone: '0912345678', item: 'Vest nam lịch lãm', rentedAt: '01/06/2026', dueDate: '05/06/2026', status: 'Đang thuê', deposit: '200.000đ', total: '600.000đ' },
-  { id: '2', invoiceNo: 'HDT000002', customer: 'Trần Thị Bình', phone: '0987654321', item: 'Áo dài truyền thống', rentedAt: '03/06/2026', dueDate: '07/06/2026', status: 'Chưa cọc đơn', deposit: '0đ', total: '450.000đ' },
-  { id: '3', invoiceNo: 'HDT000003', customer: 'Lê Minh Châu', phone: '0909111222', item: 'Váy dạ hội đỏ', rentedAt: '28/05/2026', dueDate: '01/06/2026', status: 'Trễ hạn', deposit: '300.000đ', total: '900.000đ' },
-  { id: '4', invoiceNo: 'HDT000004', customer: 'Phạm Ngọc Ánh', phone: '0933222111', item: 'Vest nữ trắng', rentedAt: '05/06/2026', dueDate: '10/06/2026', status: 'Đang thuê', deposit: '0đ', total: '220.000đ', hinhThucCoc: 'Giấy tờ tùy thân', chiTietCoc: 'CCCD - 079204012345' },
+  { id: '1', invoiceNo: 'HDT000001', customer: 'Nguyễn Văn An', phone: '0912345678', item: 'Vest nam lịch lãm', rentedAt: '13/04/2026', dueDate: '20/04/2026', status: 'Đang thuê', deposit: '200.000đ', total: '600.000đ' },
+  { id: '2', invoiceNo: 'HDT000002', customer: 'Trần Thị Bình', phone: '0987654321', item: 'Áo dài truyền thống', rentedAt: '18/04/2026', dueDate: '26/04/2026', status: 'Chưa cọc đơn', deposit: '0đ', total: '450.000đ' },
+  { id: '3', invoiceNo: 'HDT000003', customer: 'Lê Minh Châu', phone: '0909111222', item: 'Váy dạ hội đỏ', rentedAt: '01/04/2026', dueDate: '08/04/2026', status: 'Trễ hạn', deposit: '300.000đ', total: '900.000đ' },
+  { id: '4', invoiceNo: 'HDT000004', customer: 'Phạm Ngọc Ánh', phone: '0933222111', item: 'Vest nữ trắng', rentedAt: '13/04/2026', dueDate: '22/04/2026', status: 'Đang thuê', deposit: '0đ', total: '440.000đ', hinhThucCoc: 'Giấy tờ tùy thân', chiTietCoc: 'CCCD - 079204012345', ghiChuGiayTo: 'CCCD - 079204012345' },
 ];
 
 let penaltyConfig: PenaltyConfig = {

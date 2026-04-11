@@ -742,13 +742,35 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
             </div>
           )}
 
-          <button type="submit" style={{
-            ...primaryButtonStyle,
-            opacity: (!isLocked && form.khachHang && items.length > 0) ? 1 : 0.45,
-            cursor: (!isLocked && form.khachHang && items.length > 0) ? 'pointer' : 'not-allowed',
-          }} disabled={isLocked || !form.khachHang || items.length === 0}>
-            {isEditMode ? "Lưu thay đổi" : "Tạo đơn"}
-          </button>
+          {onClose && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{ ...primaryButtonStyle, flex: 1, background: '#f1f5f9', color: '#64748b' }}
+              >
+                Hủy
+              </button>
+              <button type="submit" style={{
+                ...primaryButtonStyle,
+                flex: 1,
+                opacity: (!isLocked && form.khachHang && items.length > 0) ? 1 : 0.45,
+                cursor: (!isLocked && form.khachHang && items.length > 0) ? 'pointer' : 'not-allowed',
+              }} disabled={isLocked || !form.khachHang || items.length === 0}>
+                {isEditMode ? "Lưu thay đổi" : "Tạo đơn"}
+              </button>
+            </div>
+          )}
+
+          {!onClose && (
+            <button type="submit" style={{
+              ...primaryButtonStyle,
+              opacity: (!isLocked && form.khachHang && items.length > 0) ? 1 : 0.45,
+              cursor: (!isLocked && form.khachHang && items.length > 0) ? 'pointer' : 'not-allowed',
+            }} disabled={isLocked || !form.khachHang || items.length === 0}>
+              {isEditMode ? "Lưu thay đổi" : "Tạo đơn"}
+            </button>
+          )}
 
           {message && <p style={{ ...messageStyle, color: isError ? "#EF4444" : "#22C55E" }}>{message}</p>}
         </form>
@@ -816,7 +838,11 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                     <label style={labelStyle}>Tên khách hàng *</label>
                     <input
                       value={newCustomer.tenKH}
-                      onChange={(e) => setNewCustomer((p) => ({ ...p, tenKH: e.target.value }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/[^a-zA-ZÀ-ỹ\s]/.test(val)) return;
+                        setNewCustomer((p) => ({ ...p, tenKH: val }));
+                      }}
                       placeholder="Nhập tên"
                       style={inputStyle}
                     />
@@ -826,7 +852,11 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                     <label style={labelStyle}>Số điện thoại *</label>
                     <input
                       value={newCustomer.soDienThoai}
-                      onChange={(e) => setNewCustomer((p) => ({ ...p, soDienThoai: e.target.value }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (/[^0-9]/.test(val)) return;
+                        setNewCustomer((p) => ({ ...p, soDienThoai: val }));
+                      }}
                       placeholder="Nhập số điện thoại"
                       style={inputStyle}
                     />
@@ -874,9 +904,22 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                           return;
                         }
 
+                        if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(tenKH)) {
+                          setCustomerCreateIsError(true);
+                          setCustomerCreateMessage("Tên không được chứa số hoặc ký tự đặc biệt");
+                          return;
+                        }
+
                         if (!/^[0-9]{10}$/.test(soDienThoai)) {
                           setCustomerCreateIsError(true);
-                          setCustomerCreateMessage("SĐT phải đủ 10 số");
+                          setCustomerCreateMessage("SĐT phải đủ 10 số và không chứa chữ hoặc ký tự đặc biệt");
+                          return;
+                        }
+
+                        const isDuplicate = customerStore.list().some(c => c.soDienThoai === soDienThoai);
+                        if (isDuplicate) {
+                          setCustomerCreateIsError(true);
+                          setCustomerCreateMessage("Số điện thoại đã tồn tại trong hệ thống");
                           return;
                         }
 

@@ -8,8 +8,6 @@ export default function ManageCustomersPage() {
   const [keyword, setKeyword] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState<Customer>({ maKH: "", tenKH: "", soDienThoai: "", diaChi: "" });
-  const [formMessage, setFormMessage] = useState("");
-  const [isFormError, setIsFormError] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
 
   const filteredCustomers = useMemo(() => {
@@ -23,19 +21,21 @@ export default function ManageCustomersPage() {
   }, [customers, keyword]);
 
   const openAddModal = () => {
-    setFormMessage("");
-    setIsFormError(false);
     setNewCustomer({ maKH: customerStore.nextCode(), tenKH: "", soDienThoai: "", diaChi: "" });
     setIsAddModalOpen(true);
   };
 
   const handleCreateCustomer = () => {
-    if (!newCustomer.tenKH.trim()) { setIsFormError(true); setFormMessage("Tên không được để trống"); return; }
-    if (!/^[a-zA-Z0-9À-ỹ\s,.]+$/.test(newCustomer.tenKH)) { setIsFormError(true); setFormMessage("Tên không được chứa ký tự đặc biệt"); return; }
-    if (!/^[0-9]{10}$/.test(newCustomer.soDienThoai)) { setIsFormError(true); setFormMessage("SĐT phải đủ 10 số"); return; }
+    if (!newCustomer.tenKH.trim()) { setAlertMsg("Lưu không thành công: Tên không được để trống"); return; }
+    if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(newCustomer.tenKH)) { setAlertMsg("Lưu không thành công: Tên không được chứa số hoặc ký tự đặc biệt"); return; }
+    if (!/^[0-9]{10}$/.test(newCustomer.soDienThoai)) { setAlertMsg("Lưu không thành công: SĐT phải đủ 10 số và không chứa chữ hoặc ký tự đặc biệt"); return; }
+    const isDuplicate = customerStore.list().some(c => c.soDienThoai === newCustomer.soDienThoai);
+    if (isDuplicate) { setAlertMsg("Lưu không thành công: Số điện thoại đã tồn tại trong hệ thống"); return; }
+    if (newCustomer.diaChi && /[^a-zA-Z0-9À-ỹ\s,./\-]/.test(newCustomer.diaChi)) { setAlertMsg("Lưu không thành công: Địa chỉ không được chứa ký tự đặc biệt"); return; }
     customerStore.create(newCustomer);
     setCustomers(customerStore.list());
     setIsAddModalOpen(false);
+    setAlertMsg("Lưu thành công!");
   };
 
   return (
@@ -114,8 +114,8 @@ export default function ManageCustomersPage() {
                   placeholder={placeholder}
                   onChange={(e) => {
                     const val = e.target.value;
-                    // Chặn ký tự đặc biệt cho trường tên
                     if (key === 'tenKH' && /[^a-zA-ZÀ-ỹ\s]/.test(val)) return;
+                    if (key === 'soDienThoai' && /[^0-9]/.test(val)) return;
                     setNewCustomer((p) => ({ ...p, [key]: val }));
                   }}
                   style={{ ...inputStyle, background: disabled ? '#f1f5f9' : '#fff', cursor: disabled ? 'not-allowed' : 'text' }}
@@ -126,11 +126,6 @@ export default function ManageCustomersPage() {
               <button type="button" style={cancelBtnStyle} onClick={() => setIsAddModalOpen(false)}>Đóng</button>
               <button type="button" style={saveBtnStyle} onClick={handleCreateCustomer}>Lưu</button>
             </div>
-            {formMessage && (
-              <p style={{ marginTop: 10, fontSize: 13, textAlign: 'center', color: isFormError ? '#ef4444' : '#22c55e' }}>
-                {formMessage}
-              </p>
-            )}
           </div>
         </div>
       )}
@@ -143,7 +138,7 @@ const headerStyle: CSSProperties = { display: 'flex', justifyContent: 'space-bet
 const primaryBtnStyle: CSSProperties = { background: '#2563eb', color: '#fff', padding: '10px 20px', borderRadius: '10px', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' };
 const tableContainerStyle: CSSProperties = { background: '#fff', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9' };
 const searchInputStyle: CSSProperties = { padding: '9px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', width: '280px', outline: 'none', fontSize: 13 };
-const thStyle: CSSProperties = { textAlign: 'left', padding: '12px', color: '#94a3b8', fontSize: 12, borderBottom: '1px solid #f1f5f9', fontWeight: 600, textTransform: 'uppercase' };
+const thStyle: CSSProperties = { textAlign: 'left', padding: '12px', color: '#0e0e0eff', fontSize: 13, borderBottom: '1px solid #f1f5f9', fontWeight: 600, textTransform: 'uppercase' };
 const tdStyle: CSSProperties = { padding: '14px 12px', fontSize: 14, borderBottom: '1px solid #f8fafc', color: '#334155' };
 const emptyCellStyle: CSSProperties = { textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: 14 };
 const overlayStyle: CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 100 };
