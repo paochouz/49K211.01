@@ -445,6 +445,9 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
   };
 
   const selectCostumeForItem = (itemId: string, costume: Costume) => {
+    // Kiểm tra trang phục đã được chọn ở item khác chưa
+    const alreadySelected = items.some(i => i.id !== itemId && i.costumeId === costume.id);
+    if (alreadySelected) return; // bỏ qua nếu trùng
     updateItem(itemId, {
       costumeId: costume.id,
       tenTP: costume.tenTP,
@@ -975,7 +978,8 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                 <button
                   key={c.id}
                   type="button"
-                  style={listRowButtonStyle}
+                  disabled={items.some(i => i.id !== isCostumeModalOpenFor && i.costumeId === c.id)}
+                  style={{ ...listRowButtonStyle, ...(items.some(i => i.id !== isCostumeModalOpenFor && i.costumeId === c.id) ? { opacity: 0.4, cursor: 'not-allowed', background: '#f8fafc' } : {}) }}
                   onClick={() => selectCostumeForItem(isCostumeModalOpenFor, c)}
                 >
                   <b>{c.tenTP}</b> - {c.size} • {c.donGia.toLocaleString("vi-VN")}đ{" "}

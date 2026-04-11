@@ -18,6 +18,8 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
     o.item.split(', ').map((x: string) => x.trim()).includes(costume?.tenTP || '')
   );
 
+  const isRented = costume?.trangThai === '\u0110ang thu\u00EA' || costume?.trangThai === 'H\u01B0 h\u1ECFng';
+
   const [formData, setFormData] = useState({
     ma: costume?.maTP || '',
     ten: costume?.tenTP || '',
@@ -45,10 +47,8 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
   };
 
   const handleSave = () => {
-    const newErrors: typeof errors = {};
-    if (!formData.ten.trim()) newErrors.ten = 'T\u00EAn kh\u00F4ng \u0111\u01B0\u1EE3c \u0111\u1EC3 tr\u1ED1ng';
+    if (!formData.ten.trim()) { setAlertMsg('L\u01B0u kh\u00F4ng th\u00E0nh c\u00F4ng: T\u00EAn kh\u00F4ng \u0111\u01B0\u1EE3c \u0111\u1EC3 tr\u1ED1ng'); return; }
     if (!formData.giaThue.trim() || Number(formData.giaThue) <= 0) { setAlertMsg('L\u01B0u kh\u00F4ng th\u00E0nh c\u00F4ng: Gi\u00E1 thu\u00EA ph\u1EA3i l\u1EDBn h\u01A1n 0'); return; }
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
     costumeStore.update(maTP, {
       tenTP: formData.ten,
@@ -172,9 +172,20 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
             <Trash2 size={16} />
             <span>X&#243;a</span>
           </button>
+          {isRented && (
+            <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fcd34d', fontSize: 13, color: '#92400e' }}>
+              Trang ph&#7909;c &#273;ang &#273;&#432;&#7907;c thu&#234; &#8212; kh&#244;ng th&#7875; ch&#7881;nh s&#7917;a.
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '12px' }}>
             <button style={s.cancelBtn} onClick={onClose}>H&#7911;y</button>
-            <button style={s.saveBtn} onClick={handleSave}>L&#432;u thay &#273;&#7893;i</button>
+            <button
+              style={{ ...s.saveBtn, ...(isRented ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
+              disabled={isRented}
+              onClick={handleSave}
+            >
+              L&#432;u thay &#273;&#7893;i
+            </button>
           </div>
         </div>
       </div>

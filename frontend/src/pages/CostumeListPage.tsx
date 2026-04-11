@@ -175,7 +175,8 @@ export default function CostumeListPage() {
               {owner && (
                 <>
                   <button
-                    style={{ marginBottom: 8, padding: "10px 16px", borderRadius: 8, border: "1px solid #c7d2fe", background: "#eef2ff", color: "#2563eb", cursor: "pointer", width: "100%", fontWeight: 600, fontSize: 14 }}
+                    style={{ marginBottom: 8, padding: "10px 16px", borderRadius: 8, border: "1px solid #c7d2fe", background: (selected.status === "Đang thuê" || selected.status === "Hư hỏng") ? "#f1f5f9" : "#eef2ff", color: (selected.status === "Đang thuê" || selected.status === "Hư hỏng") ? "#94a3b8" : "#2563eb", cursor: (selected.status === "Đang thuê" || selected.status === "Hư hỏng") ? "not-allowed" : "pointer", width: "100%", fontWeight: 600, fontSize: 14 }}
+                    disabled={selected.status === "Đang thuê" || selected.status === "Hư hỏng"}
                     onClick={() => { setEditItem(selected); setSelected(null); }}
                   >
                     C&#7853;p nh&#7853;t trang ph&#7909;c
