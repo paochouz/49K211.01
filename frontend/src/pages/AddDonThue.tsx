@@ -764,9 +764,8 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
             <label style={labelStyle}>Trạng thái đơn</label>
             <input
               value={form.trangThai}
-              disabled={isEditMode}
-              onChange={(e) => !isEditMode && setForm((p) => ({ ...p, trangThai: e.target.value }))}
-              style={{ ...inputStyle, ...(isEditMode ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {}) }}
+              disabled={true}
+              style={{ ...inputStyle, backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
             />
           </div>
 
