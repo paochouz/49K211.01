@@ -64,7 +64,8 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
   };
 
   const handlePhiHuHongChange = (id: string, value: string) => {
-    const price = parseInt(value.replace(/\D/g, '')) || 0;
+    const numStr = value.replace(/[^0-9]/g, '');
+    const price = parseInt(numStr) || 0;
     setData((prev: any) => ({
       ...prev,
       trangPhuc: prev.trangPhuc.map((item: any) => item.id === id ? { ...item, phiHuHong: price } : item),
@@ -128,16 +129,16 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
 
   return (
     <div style={onClose
-      ? { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px', overflowY: 'auto' }
+      ? { position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }
       : { minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }
-    }>
+    } onClick={onClose ? (e) => { if (e.target === e.currentTarget) onClose(); } : undefined}>
       {!onClose && <aside style={{ position: 'fixed', top: 0, left: 0, width: '220px', height: '100vh' }}><Menu /></aside>}
 
       <div style={onClose
-        ? { marginLeft: 0, display: 'flex', justifyContent: 'center', padding: '0', width: '100%', maxWidth: '900px' }
+        ? { width: '100%', maxWidth: '860px' }
         : { marginLeft: '220px', display: 'flex', justifyContent: 'center', padding: '32px 24px' }
       }>
-        <main style={{ width: '100%', maxWidth: '860px', backgroundColor: '#F8FAFC', borderRadius: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB' }}>
+        <main style={{ width: '100%', maxWidth: '860px', backgroundColor: '#F8FAFC', borderRadius: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB', ...(onClose ? { maxHeight: '90vh' } : {}) }}>
 
           {/* Header */}
           <div style={{ padding: '20px 32px', borderBottom: '1px solid #E5E7EB', backgroundColor: 'white' }}>
@@ -180,7 +181,7 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
                       </select>
                       <input placeholder="Ghi chú lỗi" value={item.moTaLoi} disabled={item.status === 'Bình thường'} onChange={(e) => handleMoTaLoiChange(item.id, e.target.value)} style={{ height: '40px', flex: 1, padding: '0 12px', borderRadius: '8px', border: '1px solid #E5E7EB' }} />
                       <div style={{ position: 'relative' }}>
-                        <input value={item.phiHuHong.toLocaleString()} disabled={item.status === 'Bình thường'} onChange={(e) => handlePhiHuHongChange(item.id, e.target.value)} style={{ height: '40px', width: '130px', textAlign: 'right', padding: '0 45px 0 12px', borderRadius: '8px', border: '1px solid #E5E7EB', fontWeight: 'bold' }} />
+                        <input value={item.phiHuHong > 0 ? item.phiHuHong.toLocaleString() : ''} disabled={item.status === 'Bình thường'} onChange={(e) => handlePhiHuHongChange(item.id, e.target.value)} style={{ height: '40px', width: '130px', textAlign: 'right', padding: '0 45px 0 12px', borderRadius: '8px', border: '1px solid #E5E7EB', fontWeight: 'bold' }} />
                         <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', fontWeight: 'bold', color: '#64748B' }}>VNĐ</span>
                       </div>
                     </div>

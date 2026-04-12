@@ -20,6 +20,7 @@ type CostumeItem = {
   name: string;
   price: number;
   size: string;
+  loaiTP: string;
   status: StatusValue;
   image: string;
   renter?: string;
@@ -41,17 +42,25 @@ export default function CostumeListPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [rentalInfo, setRentalInfo] = useState<{customer:string;dueDate:string}|null>(null);
+  const [loadingRental, setLoadingRental] = useState(false);
 
   useEffect(() => {
-    if (selected && (selected.status === "Đang thuê" || (selected.status as string) === "Trễ hạn")) {
-      orderStore.getRentalInfo(selected.name).then(setRentalInfo);
+    if (selected && selected.status === "Đang thuê") {
+      setLoadingRental(true);
+      setRentalInfo(null);
+      orderStore.getRentalInfo(selected.id).then(info => {
+        setRentalInfo(info);
+        setLoadingRental(false);
+      });
     } else {
       setRentalInfo(null);
+      setLoadingRental(false);
     }
   }, [selected]);
   const mapCostume = (c: any) => ({
     id: c.maTP, name: c.tenTP, price: c.giaThue,
     size: c.moTa ? `Size ${c.size} - ${c.moTa}` : `Size ${c.size}`,
+    loaiTP: c.loaiTP || '',
     status: c.trangThai as StatusValue,
     image: c.hinhAnh, renter: undefined, returnDate: undefined,
   });
@@ -182,17 +191,18 @@ export default function CostumeListPage() {
                 />
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
                   {[
-                    ['Mã', selected.id],
-                    ['Tên', selected.name],
+                    ['Mã trang phục', selected.id],
+                    ['Tên trang phục', selected.name],
                     ['Giá thuê', `${selected.price.toLocaleString()} VNĐ`],
-                    ['Mô tả', selected.size],
+                    ['Mô tả/Size', selected.size],
+                    ['Loại trang phục', selected.loaiTP || '—'],
                   ].map(([l, v]) => (
                     <div key={l} style={{ fontSize: 14, color: "#334155" }}>
                       <span style={{ fontWeight: 600 }}>{l}: </span>{v}
                     </div>
                   ))}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-                    <span style={{ fontWeight: 600 }}>Trạng thái: </span>
+                    <span style={{ fontWeight: 600 }}>Trạng thái hiện tại: </span>
                     <span style={{ ...badgeStyle, backgroundColor: statusColor[selected.status] || "#94a3b8" }}>
                       {selected.status}
                     </span>
@@ -200,10 +210,15 @@ export default function CostumeListPage() {
                 </div>
               </div>
 
-              {/* Lịch đang thuê */}
-              {(selected.status === "Đang thuê" || (selected.status as string) === "Trễ hạn") && rentalInfo && (
+              {/* Lịch đang thuê - chỉ hiện khi trạng thái là "Đang thuê" */}
+              {selected.status === "Đang thuê" && (
                 <div style={{ backgroundColor: "#fef3c7", padding: "12px 14px", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
-                  <b>Lịch đang thuê:</b> Khách đang thuê: {rentalInfo.customer} – Hạn trả: {rentalInfo.dueDate}
+                  <b>Lịch đang thuê:</b>{" "}
+                  {loadingRental
+                    ? "Đang tải..."
+                    : rentalInfo
+                      ? `Khách đang thuê: ${rentalInfo.customer} – Hạn trả: ${rentalInfo.dueDate}`
+                      : "Không tìm thấy thông tin đơn thuê"}
                 </div>
               )}
 

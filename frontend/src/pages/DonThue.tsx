@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AddDonThue from './AddDonThue';
 import Menu from './Menu';
 import type { Order } from '../services/supabaseStore';
 import { orderStore, costumeStore } from '../services/supabaseStore';
+import CostumeReturns from './CostumeReturns';
 
 export type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
 
@@ -14,7 +14,6 @@ type StatusBadgeProps = {
 };
 
 export default function RentalOrdersPage() {
-  const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
@@ -22,6 +21,7 @@ export default function RentalOrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<OrderItem[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | undefined>(undefined);
+  const [returnOrderId, setReturnOrderId] = useState<string | null>(null);
   const [popupMessage, setPopupMessage] = useState('');
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const showPopup = (message: string) => {
@@ -31,8 +31,9 @@ export default function RentalOrdersPage() {
 
   const refreshOrders = () => {
     orderStore.list().then((list) => {
-      setOrders(list);
-      setFilteredOrders(list);
+      const sorted = [...list].sort((a, b) => a.invoiceNo.localeCompare(b.invoiceNo));
+      setOrders(sorted);
+      setFilteredOrders(sorted);
     }).catch((err) => {
       console.error('Failed to load orders', err);
       setOrders([]);
@@ -121,6 +122,25 @@ export default function RentalOrdersPage() {
   const handleDeposit = async (invoiceNo: string) => {
     try {
       const details = await orderStore.getOrderDetailsByInvoice(invoiceNo);
+
+      // Kiểm tra từng trang phục có đang được thuê bởi đơn khác không
+      const { supabase } = await import('../services/supabaseClient');
+      for (const detail of details) {
+        const { data: activeOrders } = await supabase
+          .from('chitietdonthue')
+          .select('madon, donthue(trangthaidon)')
+          .eq('matp', detail.matp)
+          .neq('madon', invoiceNo);
+
+        const conflict = (activeOrders || []).find((r: any) =>
+          ['Dang thue', 'Tre han', 'Đang thuê', 'Trễ hạn'].includes(r.donthue?.trangthaidon)
+        );
+        if (conflict) {
+          showPopup(`Trang phục "${detail.matp}" đang được thuê bởi đơn khác. Không thể xác nhận cọc.`);
+          return;
+        }
+      }
+
       await orderStore.updateStatus(invoiceNo, 'Đang thuê');
       await Promise.all(
         details.map((detail) => costumeStore.update(detail.matp, { trangThai: 'Đang thuê' }))
@@ -154,7 +174,7 @@ export default function RentalOrdersPage() {
           <button
             type="button"
             onClick={openCreateModal}
-            className="rounded-2xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-indigo-700"
+            className="rounded-2xl bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-700"
           >
             + Tạo đơn thuê
           </button>
@@ -203,7 +223,7 @@ export default function RentalOrdersPage() {
               <button
                 type="button"
                 onClick={handleFilter}
-                className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white"
+                className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
               >
                 Lọc
               </button>
@@ -257,7 +277,7 @@ export default function RentalOrdersPage() {
                   <button
                     type="button"
                     disabled={order.status !== 'Đang thuê' && order.status !== 'Trễ hạn'}
-                    onClick={() => navigate(`/costume-returns/${order.invoiceNo}`)}
+                    onClick={() => setReturnOrderId(order.invoiceNo)}
                     className={`rounded-xl px-3 py-2 text-xs font-medium ${
                       order.status === 'Đang thuê' || order.status === 'Trễ hạn'
                         ? 'bg-emerald-100 text-emerald-700 cursor-pointer'
@@ -294,6 +314,13 @@ export default function RentalOrdersPage() {
             closeModal();
             refreshOrders();
           }}
+        />
+      )}
+
+      {returnOrderId && (
+        <CostumeReturns
+          maDonProp={returnOrderId}
+          onClose={() => { setReturnOrderId(null); refreshOrders(); }}
         />
       )}
       

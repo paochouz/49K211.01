@@ -21,7 +21,7 @@ export default function AlertModal({ message, onClose, title = 'Thông báo' }: 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
             onClick={onClose}
-            style={{ background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 28px', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+            style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 28px', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
           >
             OK
           </button>

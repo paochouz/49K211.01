@@ -39,11 +39,19 @@ export default function AddCostumeModal({ onClose, onSuccess }: Props) {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setForm((p) => ({
-      ...p,
-      hinhAnh: file,
-      hinhAnhPreview: file ? URL.createObjectURL(file) : "",
-    }));
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((p) => ({
+          ...p,
+          hinhAnh: file,
+          hinhAnhPreview: reader.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setForm((p) => ({ ...p, hinhAnh: null, hinhAnhPreview: "" }));
+    }
   };
 
   const handleSubmit = async () => {

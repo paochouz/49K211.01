@@ -41,10 +41,19 @@ const PenaltyConfigPage = () => {
               <input
                 type="number"
                 value={config.tyLePhatQuaHan}
-                onChange={(e) =>
-                  setConfig({ ...config, tyLePhatQuaHan: Number(e.target.value) })
-                }
-                placeholder="0"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Chỉ cho phép số từ 0-100
+                  const numVal = val === '' ? 0 : parseFloat(val);
+                  if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
+                    setConfig({ ...config, tyLePhatQuaHan: numVal });
+                  }
+                }}
+                onFocus={(e) => e.target.select()}
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="Nhập tỷ lệ phạt"
                 style={inputStyle}
               />
               <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 14, fontWeight: 600 }}>%</span>
