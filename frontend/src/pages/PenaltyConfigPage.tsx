@@ -5,8 +5,14 @@ import { penaltyStore } from '../services/supabaseStore';
 
 const PenaltyConfigPage = () => {
   const [config, setConfig] = useState(() => ({ tyLePhatQuaHan: 10, moTaQuyDinh: '', trangThaiApDung: true }));
+  const [inputValue, setInputValue] = useState('10');
 
-  useEffect(() => { penaltyStore.get().then(setConfig); }, []);
+  useEffect(() => { 
+    penaltyStore.get().then((data) => {
+      setConfig(data);
+      setInputValue(data.tyLePhatQuaHan.toString());
+    }); 
+  }, []);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const handleSave = () => {
@@ -39,21 +45,26 @@ const PenaltyConfigPage = () => {
             </label>
             <div style={{ position: 'relative' }}>
               <input
-                type="number"
-                value={config.tyLePhatQuaHan}
+                type="text"
+                value={inputValue}
                 onChange={(e) => {
                   const val = e.target.value;
-                  // Chỉ cho phép số từ 0-100
-                  const numVal = val === '' ? 0 : parseFloat(val);
-                  if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
-                    setConfig({ ...config, tyLePhatQuaHan: numVal });
+                  // Cho phép rỗng hoặc số với dấu chấm
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    setInputValue(val);
+                    const numVal = val === '' ? 0 : parseFloat(val);
+                    if (!isNaN(numVal) && numVal >= 0 && numVal <= 100) {
+                      setConfig({ ...config, tyLePhatQuaHan: numVal });
+                    }
                   }
                 }}
-                onFocus={(e) => e.target.select()}
-                min="0"
-                max="100"
-                step="0.1"
-                placeholder="Nhập tỷ lệ phạt"
+                onBlur={() => {
+                  // Khi blur, format lại giá trị
+                  if (inputValue === '' || parseFloat(inputValue) === 0) {
+                    setInputValue('0');
+                  }
+                }}
+                placeholder="0"
                 style={inputStyle}
               />
               <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 14, fontWeight: 600 }}>%</span>
