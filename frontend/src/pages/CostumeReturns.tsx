@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Menu from './Menu';
 import AlertModal from '../components/AlertModal';
-import { orderStore, costumeStore, penaltyStore } from '../services/supabaseStore';
+import { orderStore, penaltyStore } from '../services/supabaseStore';
 
 const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: () => void }) => {
   const params = useParams<{ maDon: string }>();
