@@ -61,6 +61,33 @@ export default function CostumeListPage() {
   const owner = isOwner();
 
   const refreshCostumes = async () => {
+    const { supabase } = await import('../services/supabaseClient');
+
+    // Đồng bộ tự động: reset trang phục "Đang thuê" không thuộc đơn active
+    const [{ data: orders }, { data: details }, { data: allCostumes }] = await Promise.all([
+      supabase.from('donthue').select('madon, trangthaidon'),
+      supabase.from('chitietdonthue').select('matp, madon'),
+      supabase.from('trangphuc').select('matp, trangthai'),
+    ]);
+
+    const activeOrderIds = new Set(
+      (orders || [])
+        .filter((o: any) => ['Dang thue', 'Tre han'].includes(o.trangthaidon))
+        .map((o: any) => o.madon)
+    );
+    const activeMatps = new Set(
+      (details || [])
+        .filter((d: any) => activeOrderIds.has(d.madon))
+        .map((d: any) => d.matp)
+    );
+    const toReset = (allCostumes || [])
+      .filter((c: any) => c.trangthai === 'Đang thuê' && !activeMatps.has(c.matp))
+      .map((c: any) => c.matp);
+
+    if (toReset.length > 0) {
+      await supabase.from('trangphuc').update({ trangthai: 'Sẵn sàng' }).in('matp', toReset);
+    }
+
     const data = await costumeStore.list();
     setCostumes(data.map(mapCostume));
   };

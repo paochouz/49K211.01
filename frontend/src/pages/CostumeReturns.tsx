@@ -21,7 +21,7 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
       const orders = await orderStore.list();
       const order = orders.find((o) => o.invoiceNo === maDon);
       if (order) {
-        const costumes = await costumeStore.list();
+        const costumeDetails = await orderStore.getOrderDetailsByInvoice(maDon);
         setData({
           maDon: order.invoiceNo,
           khachHang: {
@@ -32,10 +32,15 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
           },
           tongGiaTriDon: Number(order.total.replace(/[^\d]/g, '')) || 0,
           hanTra: (() => { const [d, m, y] = order.dueDate.split('/'); return `${y}-${m}-${d}`; })(),
-          trangPhuc: order.item.split(', ').map((name, idx) => {
-            const c = costumes.find((c) => c.tenTP === name.trim());
-            return { id: c?.maTP || String(idx), ten: name.trim(), hinh: c?.hinhAnh || '', status: 'Bình thường', moTaLoi: '', phiHuHong: 0 };
-          }),
+          trangPhuc: costumeDetails.map((detail, idx) => ({
+            id: detail.matp || String(idx),
+            ten: detail.tenTP,
+            hinh: detail.hinhAnh || '',
+            status: 'Bình thường',
+            moTaLoi: '',
+            phiHuHong: 0,
+          })),
+
         });
       }
       setLoading(false);
@@ -93,13 +98,12 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
   const handleComplete = async () => {
     try {
       setErrorMsg('');
-      await orderStore.updateStatus(data.maDon, 'Đã trả');
-      for (const item of data.trangPhuc) {
-        if (item.id && !item.id.startsWith('TP')) continue; // Skip if not a valid maTP
-        await costumeStore.update(item.id, {
-          trangThai: item.status === 'Bình thường' ? 'Sẵn sàng' : item.status === 'Mất' ? 'Ngưng sử dụng' : 'Hư hỏng',
-        });
-      }
+      const returnedItems = data.trangPhuc.map((item: any) => ({
+        matp: item.id,
+        status: item.status,
+        phiHuHong: Number(item.phiHuHong || 0),
+      }));
+      await orderStore.completeReturn(data.maDon, returnedItems);
       setAlertMsg('Xử lý trả đồ thành công!');
       setTimeout(() => { if (onClose) onClose(); else navigate('/don-thue'); }, 1500);
     } catch (err: any) {

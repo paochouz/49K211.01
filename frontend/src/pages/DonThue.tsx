@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AddDonThue from './AddDonThue';
 import Menu from './Menu';
 import type { Order } from '../services/supabaseStore';
-import { orderStore } from '../services/supabaseStore';
+import { orderStore, costumeStore } from '../services/supabaseStore';
 
 export type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
 
@@ -79,16 +79,6 @@ export default function RentalOrdersPage() {
     return /^\d{10}$/.test(value);
   };
 
-  useEffect(() => {
-    orderStore.list().then((list) => {
-      setOrders(list);
-      setFilteredOrders(list);
-    }).catch((err) => {
-      console.error('Failed to load orders', err);
-      setOrders([]);
-      setFilteredOrders([]);
-    });
-  }, []);
 
   const handleFilter = () => {
 
@@ -128,20 +118,19 @@ export default function RentalOrdersPage() {
     setFilteredOrders(orders);
   };
 
-  const handleDeposit = (invoiceNo: string) => {
-    const updated = orders.map((order) =>
-      order.invoiceNo === invoiceNo
-        ? {
-            ...order,
-            status: 'Đang thuê' as OrderStatus,
-            deposit: order.deposit === '0đ' ? '500.000đ' : order.deposit,
-          }
-        : order,
-    );
-
-    setOrders(updated);
-    setFilteredOrders(updated);
-    showPopup(`Hóa đơn ${invoiceNo} đã chuyển sang trạng thái "Đang thuê".`);
+  const handleDeposit = async (invoiceNo: string) => {
+    try {
+      const details = await orderStore.getOrderDetailsByInvoice(invoiceNo);
+      await orderStore.updateStatus(invoiceNo, 'Đang thuê');
+      await Promise.all(
+        details.map((detail) => costumeStore.update(detail.matp, { trangThai: 'Đang thuê' }))
+      );
+      refreshOrders();
+      showPopup(`Hóa đơn ${invoiceNo} đã chuyển sang trạng thái "Đang thuê".`);
+    } catch (err: any) {
+      console.error('Lỗi cập nhật cọc:', err);
+      showPopup('Không thể cập nhật trạng thái cọc. Vui lòng thử lại.');
+    }
   };
 
 

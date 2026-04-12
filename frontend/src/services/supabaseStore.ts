@@ -30,6 +30,25 @@ function parseNumericValue(value: any): number {
   return Number(value) || 0;
 }
 
+function normalizeOrderStatus(raw: string): OrderStatus {
+  const normalized = (raw || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // bỏ dấu
+  if (['dang thue'].includes(normalized)) return 'Đang thuê';
+  if (['da tra'].includes(normalized)) return 'Đã trả';
+  if (['tre han'].includes(normalized)) return 'Trễ hạn';
+  return 'Chưa cọc đơn';
+}
+
+function mapOrderStatusToDb(status: OrderStatus): string {
+  const dbStatusMap: Record<OrderStatus, string> = {
+    'Chưa cọc đơn': 'Chua coc',
+    'Đang thuê': 'Dang thue',
+    'Đã trả': 'Da tra',
+    'Trễ hạn': 'Tre han',
+  };
+  return dbStatusMap[status] || 'Chua coc';
+}
+
 async function getActiveRentedMatps(): Promise<Set<string>> {
   const [{ data: details }, { data: orders }] = await Promise.all([
     supabase.from('chitietdonthue').select('matp, madon'),
@@ -37,7 +56,7 @@ async function getActiveRentedMatps(): Promise<Set<string>> {
   ]);
   const activeOrderIds = new Set(
     (orders || [])
-      .filter((o: any) => ['Đang thuê', 'Trễ hạn'].includes((o.trangthaidon || '').trim()))
+      .filter((o: any) => ['Dang thue', 'Tre han'].includes(o.trangthaidon))
       .map((o: any) => o.madon),
   );
   return new Set(
@@ -48,11 +67,7 @@ async function getActiveRentedMatps(): Promise<Set<string>> {
 }
 
 function mapStatus(raw: string): OrderStatus {
-  const v = (raw || '').trim();
-  if (v === 'Đang thuê') return 'Đang thuê';
-  if (v === 'Đã trả') return 'Đã trả';
-  if (v === 'Trễ hạn') return 'Trễ hạn';
-  return 'Chưa cọc đơn'; // 'Chưa cọc' → 'Chưa cọc đơn' cho UI
+  return normalizeOrderStatus(raw);
 }
 
 // ---- AUTH ----
@@ -140,6 +155,30 @@ export const orderStore = {
         supabase.from('trangphuc').select('matp, tentp'),
       ]);
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Tự động chuyển "Dang thue" sang "Tre han" nếu quá ngày trả
+      const overdueIds: string[] = [];
+      for (const o of orders) {
+        if (o.trangthaidon !== 'Dang thue') continue;
+        const orderDetails = (details || []).filter((d: any) => d.madon === o.madon);
+        const maxDueDate = orderDetails.reduce((max: Date | null, d: any) => {
+          if (!d.ngaytradukien) return max;
+          const due = new Date(d.ngaytradukien);
+          due.setHours(0, 0, 0, 0);
+          return !max || due > max ? due : max;
+        }, null);
+        if (maxDueDate && maxDueDate < today) overdueIds.push(o.madon);
+      }
+      if (overdueIds.length > 0) {
+        await supabase.from('donthue').update({ trangthaidon: 'Tre han' }).in('madon', overdueIds);
+        overdueIds.forEach((id) => {
+          const o = orders.find((x: any) => x.madon === id);
+          if (o) o.trangthaidon = 'Tre han';
+        });
+      }
+
       return orders.map((o: any) => {
         const kh = (customers || []).find((c: any) => c.makh === o.makh);
         const orderDetails = (details || []).filter((d: any) => d.madon === o.madon);
@@ -157,7 +196,7 @@ export const orderStore = {
           status: mapStatus(o.trangthaidon),
           deposit: o.tiencoc ? `${Number(o.tiencoc).toLocaleString('vi-VN')}đ` : '0đ',
           total: o.tongtienthue ? `${Number(o.tongtienthue).toLocaleString('vi-VN')}đ` : '0đ',
-          hinhThucCoc: o.hinhthuccoc === 'Giấy Tờ' || o.hinhthuccoc === 'Giấy tờ tùy thân' ? 'Giấy tờ tùy thân' : (o.hinhthuccoc || ''),
+          hinhThucCoc: o.hinhthuccoc === 'GiayTo' ? 'Giấy tờ tùy thân' : 'Tiền mặt/chuyển khoản',
           chiTietCoc: o.ghichugiayto || '', ghiChuGiayTo: o.ghichugiayto || '',
         };
       });
@@ -167,49 +206,112 @@ export const orderStore = {
     const { data } = await supabase.from('donthue').select('madon');
     return nextCode('HDT', (data || []).map((r: any) => r.madon));
   },
-  create: async (o: Omit<Order, 'id'>) => {
+  create: async (o: Omit<Order, 'id'> & { detailItems?: Array<{ matp: string; ngaythue: string; ngaytradukien: string }> }) => {
     // Lấy makh từ phone
     const { data: kh } = await supabase.from('khachhang').select('makh').eq('sodienthoai', o.phone).maybeSingle();
     const makh = kh?.makh || '';
     const tiencoc = Number(o.deposit.replace(/[^\d]/g, '')) || 0;
     const tongtienthue = Number(o.total.replace(/[^\d]/g, '')) || 0;
 
-    await supabase.from('donthue').insert({
+    const parseDisplayDate = (value: string): string => {
+      const parts = value.split('/').map((p) => p.trim());
+      if (parts.length !== 3) return value;
+      const [day, month, year] = parts;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    };
+
+    const { error: orderError } = await supabase.from('donthue').insert({
+      id: o.invoiceNo,
       madon: o.invoiceNo,
       makh,
       taikhoannhanvien: 'admin',
-      hinhthuccoc: (o.hinhThucCoc === 'Giấy tờ tùy thân') ? 'Giấy tờ tùy thân' : 'Tiền mặt/chuyển khoản',
+      hinhthuccoc: (o.hinhThucCoc === 'Giấy tờ tùy thân') ? 'GiayTo' : 'Tien',
       tiencoc,
       ghichugiayto: o.ghiChuGiayTo || null,
       tongtienthue,
       phitratre: 0,
       tongphatsinh: 0,
       tienphaithutra: Math.max(0, tongtienthue - tiencoc),
-      trangthaidon: 'Chưa cọc',
+      trangthaidon: 'Chua coc',
       ngaytao: new Date().toISOString(),
     });
-    // Insert chitietdonthue
-    const names = o.item.split(', ').map(s => s.trim());
-    const { data: costumes } = await supabase.from('trangphuc').select('matp, tentp');
-    for (const name of names) {
-      const tp = (costumes || []).find((c: any) => c.tentp === name);
-      if (tp) {
-        const [d, m, y] = o.rentedAt.split('/');
-        const [d2, m2, y2] = o.dueDate.split('/');
-        await supabase.from('chitietdonthue').insert({
-          madon: o.invoiceNo, matp: tp.matp,
-          ngaythue: `${y}-${m}-${d}`, ngaytradukien: `${y2}-${m2}-${d2}`,
-          trangthaitra: 'Bình thường', phihuhong: 0,
+    if (orderError) throw orderError;
+
+    // Nếu có detailItems (từ AddDonThue với ngày riêng từng item), dùng trực tiếp
+    if (o.detailItems && o.detailItems.length > 0) {
+      for (const detail of o.detailItems) {
+        const { error: detailError } = await supabase.from('chitietdonthue').insert({
+          madon: o.invoiceNo,
+          matp: detail.matp,
+          ngaythue: parseDisplayDate(detail.ngaythue),
+          ngaytradukien: parseDisplayDate(detail.ngaytradukien),
+          trangthaitra: 'Bình thường',
+          phihuhong: 0,
         });
-        await supabase.from('trangphuc').update({ trangthai: 'Đang thuê' }).eq('matp', tp.matp);
+        if (detailError) throw detailError;
+        // Không cập nhật trangthai trang phục ở đây — chỉ cập nhật khi đơn chuyển sang "Đang thuê"
       }
+      return;
+    }
+
+    // Fallback: tìm theo tên trang phục
+    const names = o.item.split(',').map((s) => s.trim()).filter(Boolean);
+    const { data: costumes } = await supabase.from('trangphuc').select('matp, tentp');
+    if (!costumes) throw new Error('Không lấy được danh sách trang phục');
+
+    for (const name of names) {
+      const tp = costumes.find((c: any) => c.tentp === name);
+      if (!tp) throw new Error(`Không tìm thấy trang phục: ${name}`);
+
+      const { error: detailError } = await supabase.from('chitietdonthue').insert({
+        madon: o.invoiceNo,
+        matp: tp.matp,
+        ngaythue: parseDisplayDate(o.rentedAt),
+        ngaytradukien: parseDisplayDate(o.dueDate),
+        trangthaitra: 'Bình thường',
+        phihuhong: 0,
+      });
+      if (detailError) throw detailError;
+      // Không cập nhật trangthai trang phục ở đây — chỉ cập nhật khi đơn chuyển sang "Đang thuê"
     }
   },
+  getOrderDetailsByInvoice: async (invoiceNo: string) => {
+    const [{ data: details }, { data: costumes }] = await Promise.all([
+      supabase.from('chitietdonthue').select('matp, ngaythue, ngaytradukien').eq('madon', invoiceNo),
+      supabase.from('trangphuc').select('matp, tentp, hinhanh'),
+    ]);
+
+    return (details || []).map((d: any) => {
+      const costume = (costumes || []).find((c: any) => c.matp === d.matp);
+      return {
+        matp: d.matp,
+        tenTP: costume?.tentp || d.matp,
+        hinhAnh: costume?.hinhanh || '',
+        ngayThue: formatDate(d.ngaythue),
+        ngayTraDuKien: formatDate(d.ngaytradukien),
+      };
+    });
+  },
   updateStatus: async (invoiceNo: string, status: OrderStatus) => {
+    await supabase.from('donthue').update({ trangthaidon: mapOrderStatusToDb(status) }).eq('madon', invoiceNo);
+  },
+  completeReturn: async (invoiceNo: string, returnedItems: Array<{ matp: string; status: string; phiHuHong: number }>) => {
     const statusMap: Record<string, string> = {
-      'Đang thuê': 'Đang thuê', 'Đã trả': 'Đã trả', 'Trễ hạn': 'Trễ hạn', 'Chưa cọc đơn': 'Chưa cọc',
+      'Bình thường': 'Sẵn sàng',
+      'Hư hỏng': 'Hư hỏng',
+      'Mất': 'Ngưng sử dụng',
     };
-    await supabase.from('donthue').update({ trangthaidon: statusMap[status] || status }).eq('madon', invoiceNo);
+
+    await supabase.from('donthue').update({ trangthaidon: mapOrderStatusToDb('Đã trả') }).eq('madon', invoiceNo);
+
+    await Promise.all(returnedItems.map(async (item) => {
+      const costumeStatus = statusMap[item.status] || 'Sẵn sàng';
+      await supabase.from('trangphuc').update({ trangthai: costumeStatus }).eq('matp', item.matp);
+      await supabase.from('chitietdonthue')
+        .update({ trangthaitra: item.status, phihuhong: item.phiHuHong })
+        .eq('madon', invoiceNo)
+        .eq('matp', item.matp);
+    }));
   },
   update: async (invoiceNo: string, patch: Partial<Order> & { detailItems?: Array<{ matp: string; ngaythue: string; ngaytradukien: string }> }) => {
     const mapped: any = {};
@@ -231,7 +333,7 @@ export const orderStore = {
       }
     }
     if (patch.hinhThucCoc !== undefined) {
-      mapped.hinhthuccoc = patch.hinhThucCoc === 'Giấy tờ tùy thân' ? 'Giấy tờ tùy thân' : 'Tiền mặt/chuyển khoản';
+      mapped.hinhthuccoc = patch.hinhThucCoc === 'Giấy tờ tùy thân' ? 'GiayTo' : 'Tien';
     }
     if (patch.ghiChuGiayTo !== undefined) mapped.ghichugiayto = patch.ghiChuGiayTo || null;
 
@@ -257,7 +359,7 @@ export const orderStore = {
       mapped.tienphaithutra = Math.max(0, currentTotal - currentDeposit);
     }
 
-    if (patch.status !== undefined) mapped.trangthaidon = patch.status === 'Chưa cọc đơn' ? 'Chưa cọc' : patch.status;
+    if (patch.status !== undefined) mapped.trangthaidon = mapOrderStatusToDb(patch.status);
     if (Object.keys(mapped).length > 0) {
       await supabase.from('donthue').update(mapped).eq('madon', invoiceNo);
     }

@@ -149,8 +149,16 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
 
             <div>
               <label style={s.label}>Size</label>
-              <input value={formData.size} style={s.input}
-                onChange={e => setFormData({ ...formData, size: e.target.value })} />
+              <div style={{ position: 'relative' }}>
+                <select value={formData.size} style={{ ...s.input, appearance: 'none', paddingRight: '36px' }}
+                  onChange={e => setFormData({ ...formData, size: e.target.value })}>
+                  <option value="">-- Chọn size --</option>
+                  {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(sz => (
+                    <option key={sz} value={sz}>{sz}</option>
+                  ))}
+                </select>
+                <ChevronDown style={{ position: 'absolute', right: '12px', top: '12px', pointerEvents: 'none' }} size={18} color="#64748B" />
+              </div>
             </div>
 
             <div>

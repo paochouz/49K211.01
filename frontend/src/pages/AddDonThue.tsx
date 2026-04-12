@@ -386,11 +386,11 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
   useEffect(() => {
     costumeStore.list().then(list => {
       setAllCostumes(list);
+      const available = list.filter((c) => String(c.trangThai).trim().toLowerCase() === 'sẵn sàng');
       console.log('mapped list:', list.map(c => ({tenTP: c.tenTP, trangThai: c.trangThai})));
+      console.log('available costumes:', available.length);
       setMockCostumes(
-        list
-          .filter(c => c.trangThai === 'Sẵn sàng')
-          .map(c => ({ id: c.maTP, tenTP: c.tenTP, size: c.size, donGia: c.giaThue }))
+        available.map(c => ({ id: c.maTP, tenTP: c.tenTP, size: c.size, donGia: c.giaThue }))
       );
     }).catch(console.error);
   }, [isCostumeModalOpenFor]);
@@ -540,6 +540,10 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     }
 
     try {
+      const detailItems = items.every((it) => !!it.costumeId)
+        ? items.map((it) => ({ matp: it.costumeId!, ngaythue: it.ngayThue, ngaytradukien: it.ngayTra }))
+        : undefined;
+
       await orderStore.create({
         invoiceNo: form.maDon,
         customer: form.khachHang!.tenKH,
@@ -552,7 +556,8 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
         total: `${derived.tongDonThue.toLocaleString('vi-VN')}đ`,
         hinhThucCoc: form.hinhThucCoc === 'GIAY_TO' ? 'Giấy tờ tùy thân' : 'Tiền mặt/chuyển khoản',
         ghiChuGiayTo: form.ghiChuGiayTo,
-      });
+        detailItems,
+      } as any);
       setMessage("Tạo đơn thành công!");
       onSuccess?.();
     } catch (err: any) {
