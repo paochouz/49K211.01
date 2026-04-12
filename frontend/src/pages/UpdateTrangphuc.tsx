@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload, ChevronDown, Trash2 } from 'lucide-react';
-import { costumeStore, orderStore } from '../mock/mockStore';
+import { costumeStore, orderStore } from '../services/supabaseStore';
 import ConfirmModal from '../components/ConfirmModal';
 import AlertModal from '../components/AlertModal';
 
@@ -10,28 +10,56 @@ interface Props {
   onSuccess: () => void;
 }
 
+function normalizePrice(value: any): string {
+  if (value == null) return '';
+  if (typeof value === 'string') {
+    return value.replace(/[^0-9]/g, '');
+  }
+  return String(value);
+}
+
 const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
-  const costume = costumeStore.list().find(c => c.maTP === maTP);
+  const [_costume, setCostume] = useState<any>(null);
+  const [canDelete, setCanDelete] = useState(true);
+  const [isRented, setIsRented] = useState(false);
 
-  const canDelete = !orderStore.list().some(o =>
-    (o.status === '\u0110ang thu\u00EA' || o.status === 'Tr\u1EC5 h\u1EA1n') &&
-    o.item.split(', ').map((x: string) => x.trim()).includes(costume?.tenTP || '')
-  );
-
-  const isRented = costume?.trangThai === '\u0110ang thu\u00EA' || costume?.trangThai === 'H\u01B0 h\u1ECFng';
+  useEffect(() => {
+    costumeStore.list().then(list => {
+      const c = list.find(x => x.maTP === maTP);
+      setCostume(c);
+      if (c) {
+        setFormData({
+          ma: c.maTP,
+          ten: c.tenTP,
+          loaiTP: c.loaiTP || '',
+          size: c.size || '',
+          giaThue: normalizePrice(c.giaThue),
+          moTa: c.moTa || '',
+          trangThai: c.trangThai || 'Sẵn sàng',
+        });
+        setPreviewImage(c.hinhAnh || '');
+        setIsRented(c.trangThai === 'Đang thuê' || c.trangThai === 'Hư hỏng');
+      }
+    });
+    orderStore.list().then(orders => {
+      costumeStore.list().then(list => {
+        const c = list.find(x => x.maTP === maTP);
+        if (!c) return;
+        const inActive = orders.some(o =>
+          (o.status === 'Đang thuê' || o.status === 'Trễ hạn') &&
+          o.item.split(', ').map((s: string) => s.trim()).includes(c.tenTP)
+        );
+        setCanDelete(!inActive);
+      });
+    });
+  }, [maTP]);
 
   const [formData, setFormData] = useState({
-    ma: costume?.maTP || '',
-    ten: costume?.tenTP || '',
-    loaiTP: costume?.loaiTP || '',
-    size: costume?.size || '',
-    giaThue: String(costume?.giaThue || ''),
-    moTa: costume?.moTa || '',
-    trangThai: costume?.trangThai || 'S\u1EB5n s\u00E0ng',
+    ma: '', ten: '', loaiTP: '', size: '', giaThue: '', moTa: '', trangThai: 'Sẵn sàng',
   });
 
   const [errors, setErrors] = useState<{ ten?: string; giaThue?: string }>({});
-  const [previewImage, setPreviewImage] = useState<string>(costume?.hinhAnh || '');
+  const [previewImage, setPreviewImage] = useState<string>('');
   const [alertMsg, setAlertMsg] = useState('');
   const [alertIsSuccess, setAlertIsSuccess] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -46,25 +74,21 @@ const UpdateTrangphuc: React.FC<Props> = ({ maTP, onClose, onSuccess }) => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.ten.trim()) { setAlertMsg('L\u01B0u kh\u00F4ng th\u00E0nh c\u00F4ng: T\u00EAn kh\u00F4ng \u0111\u01B0\u1EE3c \u0111\u1EC3 tr\u1ED1ng'); return; }
     if (!formData.giaThue.trim() || Number(formData.giaThue) <= 0) { setAlertMsg('L\u01B0u kh\u00F4ng th\u00E0nh c\u00F4ng: Gi\u00E1 thu\u00EA ph\u1EA3i l\u1EDBn h\u01A1n 0'); return; }
 
-    costumeStore.update(maTP, {
-      tenTP: formData.ten,
-      loaiTP: formData.loaiTP,
-      size: formData.size,
-      giaThue: Number(formData.giaThue),
-      moTa: formData.moTa,
-      trangThai: formData.trangThai,
-      hinhAnh: previewImage,
+    await costumeStore.update(maTP, {
+      tenTP: formData.ten, loaiTP: formData.loaiTP, size: formData.size,
+      giaThue: Number(formData.giaThue), moTa: formData.moTa,
+      trangThai: formData.trangThai, hinhAnh: previewImage,
     });
     setAlertMsg('L\u01B0u thay \u0111\u1ED5i th\u00E0nh c\u00F4ng!');
     setAlertIsSuccess(true);
   };
 
-  const handleDelete = () => {
-    costumeStore.delete(maTP);
+  const handleDelete = async () => {
+    await costumeStore.delete(maTP);
     onSuccess();
     onClose();
   };

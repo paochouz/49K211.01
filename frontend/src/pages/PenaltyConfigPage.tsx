@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Menu from './Menu';
-import { penaltyStore } from '../mock/mockStore';
+import { penaltyStore } from '../services/supabaseStore';
 
 const PenaltyConfigPage = () => {
-  const [config, setConfig] = useState(() => penaltyStore.get());
+  const [config, setConfig] = useState(() => ({ tyLePhatQuaHan: 10, moTaQuyDinh: '', trangThaiApDung: true }));
+
+  useEffect(() => { penaltyStore.get().then(setConfig); }, []);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const handleSave = () => {
@@ -12,9 +14,10 @@ const PenaltyConfigPage = () => {
       setMessage({ text: 'Tỷ lệ phạt phải từ 0% đến 100%', type: 'error' });
       return;
     }
-    penaltyStore.save(config);
-    setMessage({ text: 'Lưu cấu hình thành công!', type: 'success' });
-    setTimeout(() => setMessage(null), 3000);
+    penaltyStore.save(config).then(() => {
+      setMessage({ text: 'Lưu cấu hình thành công!', type: 'success' });
+      setTimeout(() => setMessage(null), 3000);
+    });
   };
 
   return (

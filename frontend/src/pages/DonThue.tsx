@@ -1,26 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import Menu from './Menu';
 import AddDonThue from './AddDonThue';
-import CostumeReturns from './CostumeReturns';
-import { orderStore, costumeStore } from '../mock/mockStore';
+import Menu from './Menu';
+import type { Order } from '../services/supabaseStore';
+import { orderStore } from '../services/supabaseStore';
 
-export type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
+type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
 
-export type OrderItem = {
-  id: string;
-  invoiceNo: string;
-  customer: string;
-  item: string;
-  phone: string;
-  rentedAt: string;
-  dueDate: string;
-  returnedAt?: string;
-  status: OrderStatus;
-  deposit: string;
-  total: string;
-  hinhThucCoc?: string;
-  ghiChuGiayTo?: string;
-};
+type OrderItem = Order;
 
 type StatusBadgeProps = {
   status: OrderStatus;
@@ -28,33 +14,47 @@ type StatusBadgeProps = {
 
 export default function RentalOrdersPage() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<OrderItem | null>(null);
-  const [returningOrder, setReturningOrder] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
-
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const data = orderStore.list();
-      setOrders(data);
-      setFilteredOrders(data);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchOrders(); }, []);
-
   const [filteredOrders, setFilteredOrders] = useState<OrderItem[]>([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<OrderItem | undefined>(undefined);
   const [popupMessage, setPopupMessage] = useState('');
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const showPopup = (message: string) => {
     setPopupMessage(message);
     setIsPopupOpen(true);
+  };
+
+  const refreshOrders = () => {
+    orderStore.list().then((list) => {
+      setOrders(list);
+      setFilteredOrders(list);
+    }).catch((err) => {
+      console.error('Failed to load orders', err);
+      setOrders([]);
+      setFilteredOrders([]);
+    });
+  };
+
+  useEffect(() => {
+    refreshOrders();
+  }, []);
+
+  const openCreateModal = () => {
+    setSelectedOrder(undefined);
+    setIsAddModalOpen(true);
+  };
+
+  const openEditModal = (order: OrderItem) => {
+    setSelectedOrder(order);
+    setIsAddModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsAddModalOpen(false);
+    setSelectedOrder(undefined);
   };
 
   const stats = useMemo(() => {
@@ -76,6 +76,17 @@ export default function RentalOrdersPage() {
     if (!value.trim()) return true;
     return /^\d{10}$/.test(value);
   };
+
+  useEffect(() => {
+    orderStore.list().then((list) => {
+      setOrders(list);
+      setFilteredOrders(list);
+    }).catch((err) => {
+      console.error('Failed to load orders', err);
+      setOrders([]);
+      setFilteredOrders([]);
+    });
+  }, []);
 
   const handleFilter = () => {
 
@@ -116,16 +127,16 @@ export default function RentalOrdersPage() {
   };
 
   const handleDeposit = (invoiceNo: string) => {
-    orderStore.updateStatus(invoiceNo, 'Đang thuê');
-    // Cập nhật trạng thái trang phục → Đang thuê
-    const order = orderStore.list().find(o => o.invoiceNo === invoiceNo);
-    if (order) {
-      order.item.split(', ').forEach(name => {
-        const c = costumeStore.list().find(c => c.tenTP === name.trim());
-        if (c) costumeStore.update(c.maTP, { trangThai: 'Đang thuê' });
-      });
-    }
-    const updated = orderStore.list();
+    const updated = orders.map((order) =>
+      order.invoiceNo === invoiceNo
+        ? {
+            ...order,
+            status: 'Đang thuê' as OrderStatus,
+            deposit: order.deposit === '0đ' ? '500.000đ' : order.deposit,
+          }
+        : order,
+    );
+
     setOrders(updated);
     setFilteredOrders(updated);
     showPopup(`Hóa đơn ${invoiceNo} đã chuyển sang trạng thái "Đang thuê".`);
@@ -148,17 +159,17 @@ export default function RentalOrdersPage() {
 
       <main className="ml-[220px] p-6 space-y-6">
         <section className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-slate-900">Quản lý đơn thuê</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Xem hóa đơn</h1>
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            style={{ background: '#2563eb', color: '#fff', padding: '10px 20px', borderRadius: '10px', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+            onClick={openCreateModal}
+            className="rounded-2xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-indigo-700"
           >
             + Tạo đơn thuê
           </button>
         </section>
 
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Tổng hóa đơn" value={stats.total} />
           <StatCard label="Chưa cọc đơn" value={stats.unpaidDeposit} />
           <StatCard label="Đang thuê" value={stats.renting} />
@@ -167,7 +178,7 @@ export default function RentalOrdersPage() {
         </section>
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h2 className="mb-4 text-base font-semibold">Lọc hóa đơn</h2>
+          <h2 className="mb-4 text-lg font-semibold">Lọc hóa đơn</h2>
 
           <div className="grid gap-3 md:grid-cols-4">
             <select
@@ -201,7 +212,7 @@ export default function RentalOrdersPage() {
               <button
                 type="button"
                 onClick={handleFilter}
-                className="w-full rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-medium text-white"
+                className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white"
               >
                 Lọc
               </button>
@@ -217,14 +228,10 @@ export default function RentalOrdersPage() {
         </section>
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h2 className="mb-4 text-base font-semibold">Danh sách hóa đơn</h2>
+          <h2 className="mb-4 text-lg font-semibold">Danh sách hóa đơn</h2>
 
           <div className="space-y-3">
-            {loading ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                Đang tải dữ liệu...
-              </div>
-            ) : filteredOrders.map((order) => (
+            {filteredOrders.map((order) => (
               <div
                 key={order.invoiceNo}
                 className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between"
@@ -259,7 +266,6 @@ export default function RentalOrdersPage() {
                   <button
                     type="button"
                     disabled={order.status !== 'Đang thuê' && order.status !== 'Trễ hạn'}
-                    onClick={() => setReturningOrder(order.invoiceNo)}
                     className={`rounded-xl px-3 py-2 text-xs font-medium ${
                       order.status === 'Đang thuê' || order.status === 'Trễ hạn'
                         ? 'bg-emerald-100 text-emerald-700'
@@ -270,7 +276,7 @@ export default function RentalOrdersPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditingOrder(order)}
+                    onClick={() => openEditModal(order)}
                     className="rounded-xl bg-amber-100 px-3 py-2 text-xs font-medium text-amber-700"
                   >
                     Chỉnh sửa
@@ -279,7 +285,7 @@ export default function RentalOrdersPage() {
               </div>
             ))}
 
-            {!loading && filteredOrders.length === 0 && (
+            {filteredOrders.length === 0 && (
               <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
                 Không có hóa đơn phù hợp.
               </div>
@@ -287,26 +293,18 @@ export default function RentalOrdersPage() {
           </div>
         </section>
       </main>
-      
-      {returningOrder && (
-        <CostumeReturns
-          maDonProp={returningOrder}
-          onClose={() => { setReturningOrder(null); fetchOrders(); }}
-        />
-      )}
 
       {isAddModalOpen && (
-        <AddDonThue onClose={() => setIsAddModalOpen(false)} onSuccess={() => { fetchOrders(); setIsAddModalOpen(false); }} />
-      )}
-
-      {editingOrder && (
         <AddDonThue
-          onClose={() => setEditingOrder(null)}
-          initialData={editingOrder}
-          onSuccess={() => { fetchOrders(); setEditingOrder(null); }}
+          initialData={selectedOrder}
+          onClose={closeModal}
+          onSuccess={() => {
+            closeModal();
+            refreshOrders();
+          }}
         />
       )}
-
+      
       {isPopupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
@@ -349,7 +347,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 min-w-0">
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <p className="text-sm text-slate-500">{label}</p>
       <p className="text-3xl font-bold text-slate-900">{value}</p>
     </div>

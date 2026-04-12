@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authStore } from "../mock/mockStore";
+import { authStore } from "../services/supabaseStore";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setMessage("");
     try {
       setLoading(true);
-      const user = authStore.login(taiKhoan.trim(), matKhau);
+      const user = await authStore.login(taiKhoan.trim(), matKhau);
       localStorage.setItem("user", JSON.stringify(user));
       navigate("/don-thue");
     } catch (error) {

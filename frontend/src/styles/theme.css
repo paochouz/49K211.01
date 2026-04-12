@@ -295,15 +295,14 @@ body {
   line-height: 1.6;
   font-size: 14px;
 }
-<<<<<<< HEAD
-=======
+
 .page-container {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 32px 16px;
-  }
-  
-  .form-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.form-page {
     max-width: 520px;
     margin: 48px auto;
   }
@@ -571,7 +570,6 @@ body {
   line-height: 1.6;
   font-size: 14px;
 }
->>>>>>> ffd36726ff37faff37c8a5913a30a64839736ecb
 
 .login-form {
   width: 100%;
@@ -589,7 +587,6 @@ body {
 .login-message {
   margin-top: 14px;
 }
-<<<<<<< HEAD
 
 /* ===== SIDEBAR ===== */
 .sidebar {
@@ -700,5 +697,3 @@ body {
 .sidebar-logout:hover {
   background: #fff1f2;
 }
-=======
->>>>>>> ffd36726ff37faff37c8a5913a30a64839736ecb

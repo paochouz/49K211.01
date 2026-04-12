@@ -1,10 +1,15 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import Menu from "./Menu";
 import AlertModal from "../components/AlertModal";
-import { customerStore, type Customer } from "../mock/mockStore";
+import { customerStore, type Customer } from "../services/supabaseStore";
 
 export default function ManageCustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(() => customerStore.list());
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    customerStore.list().then(data => { setCustomers(data); setLoading(false); });
+  }, []);
   const [keyword, setKeyword] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState<Customer>({ maKH: "", tenKH: "", soDienThoai: "", diaChi: "" });
@@ -20,20 +25,22 @@ export default function ManageCustomersPage() {
     );
   }, [customers, keyword]);
 
-  const openAddModal = () => {
-    setNewCustomer({ maKH: customerStore.nextCode(), tenKH: "", soDienThoai: "", diaChi: "" });
+  const openAddModal = async () => {
+    const code = await customerStore.nextCode();
+    setNewCustomer({ maKH: code, tenKH: "", soDienThoai: "", diaChi: "" });
     setIsAddModalOpen(true);
   };
 
-  const handleCreateCustomer = () => {
+  const handleCreateCustomer = async () => {
     if (!newCustomer.tenKH.trim()) { setAlertMsg("Lưu không thành công: Tên không được để trống"); return; }
     if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(newCustomer.tenKH)) { setAlertMsg("Lưu không thành công: Tên không được chứa số hoặc ký tự đặc biệt"); return; }
     if (!/^[0-9]{10}$/.test(newCustomer.soDienThoai)) { setAlertMsg("Lưu không thành công: SĐT phải đủ 10 số và không chứa chữ hoặc ký tự đặc biệt"); return; }
-    const isDuplicate = customerStore.list().some(c => c.soDienThoai === newCustomer.soDienThoai);
+    const isDuplicate = customers.some(c => c.soDienThoai === newCustomer.soDienThoai);
     if (isDuplicate) { setAlertMsg("Lưu không thành công: Số điện thoại đã tồn tại trong hệ thống"); return; }
     if (newCustomer.diaChi && /[^a-zA-Z0-9À-ỹ\s,./\-]/.test(newCustomer.diaChi)) { setAlertMsg("Lưu không thành công: Địa chỉ không được chứa ký tự đặc biệt"); return; }
-    customerStore.create(newCustomer);
-    setCustomers(customerStore.list());
+    await customerStore.create(newCustomer);
+    const updated = await customerStore.list();
+    setCustomers(updated);
     setIsAddModalOpen(false);
     setAlertMsg("Lưu thành công!");
   };
@@ -78,10 +85,11 @@ export default function ManageCustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomers.length === 0 ? (
+                {loading ? (
+                  <tr><td colSpan={4} style={emptyCellStyle}>Đang tải...</td></tr>
+                ) : filteredCustomers.length === 0 ? (
                   <tr><td colSpan={4} style={emptyCellStyle}>Không có dữ liệu</td></tr>
-                ) : (
-                  filteredCustomers.map((c) => (
+                ) : (                  filteredCustomers.map((c) => (
                     <tr key={c.maKH}>
                       <td style={tdStyle}><b>{c.maKH}</b></td>
                       <td style={tdStyle}>{c.tenKH}</td>

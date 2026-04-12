@@ -1,5 +1,5 @@
-import { useState, type ChangeEvent, type CSSProperties } from "react";
-import { costumeStore } from "../mock/mockStore";
+import { useState, useEffect, type ChangeEvent, type CSSProperties } from "react";
+import { costumeStore } from "../services/supabaseStore";
 import AlertModal from "./AlertModal";
 
 interface Props {
@@ -20,7 +20,8 @@ export default function AddCostumeModal({ onClose, onSuccess }: Props) {
   const [alertMsg, setAlertMsg] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const maTP = costumeStore.nextCode();
+  const [maTP, setMaTP] = useState('...');
+  useEffect(() => { costumeStore.nextCode().then(setMaTP); }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -45,11 +46,11 @@ export default function AddCostumeModal({ onClose, onSuccess }: Props) {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) return;
-    costumeStore.create({
+    await costumeStore.create({
       tenTP: form.tenTP, loaiTP: form.loaiTP, giaThue: Number(form.giaThue),
       size: form.size, moTa: form.moTa, hinhAnh: form.hinhAnhPreview || "", trangThai: "Sẵn sàng",
     });

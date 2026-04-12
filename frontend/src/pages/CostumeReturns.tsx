@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Menu from './Menu';
 import AlertModal from '../components/AlertModal';
-import { orderStore, costumeStore, penaltyStore } from '../mock/mockStore';
+import { orderStore, costumeStore, penaltyStore } from '../services/supabaseStore';
 
 const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: () => void }) => {
   const params = useParams<{ maDon: string }>();
@@ -16,29 +16,30 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
 
   useEffect(() => {
     if (!maDon) return;
-    const order = orderStore.list().find((o) => o.invoiceNo === maDon);
-    if (order) {
-      setData({
-        maDon: order.invoiceNo,
-        khachHang: {
-          ten: order.customer,
-          sdt: order.phone,
-          hinhThucCoc: order.hinhThucCoc || 'Tiền mặt/chuyển khoản',
-          chiTietCoc: order.chiTietCoc || 'Không có',
-          tienCocSo: Number(order.deposit.replace(/[^\d]/g, '')) || 0,
-        },
-        tongGiaTriDon: Number(order.total.replace(/[^\d]/g, '')) || 0,
-        hanTra: (() => {
-          const [d, m, y] = order.dueDate.split('/');
-          return `${y}-${m}-${d}`;
-        })(),
-        trangPhuc: order.item.split(', ').map((name, idx) => {
-          const c = costumeStore.list().find((c) => c.tenTP === name.trim());
-          return { id: c?.maTP || String(idx), ten: name.trim(), hinh: c?.hinhAnh || '', status: 'Bình thường', moTaLoi: '', phiHuHong: 0 };
-        }),
-      });
-    }
-    setLoading(false);
+    const fetchOrderData = async () => {
+      const orders = await orderStore.list();
+      const order = orders.find((o) => o.invoiceNo === maDon);
+      if (order) {
+        const costumes = await costumeStore.list();
+        setData({
+          maDon: order.invoiceNo,
+          khachHang: {
+            ten: order.customer, sdt: order.phone,
+            hinhThucCoc: order.hinhThucCoc || 'Tiền mặt/chuyển khoản',
+            chiTietCoc: order.chiTietCoc || 'Không có',
+            tienCocSo: Number(order.deposit.replace(/[^\d]/g, '')) || 0,
+          },
+          tongGiaTriDon: Number(order.total.replace(/[^\d]/g, '')) || 0,
+          hanTra: (() => { const [d, m, y] = order.dueDate.split('/'); return `${y}-${m}-${d}`; })(),
+          trangPhuc: order.item.split(', ').map((name, idx) => {
+            const c = costumes.find((c) => c.tenTP === name.trim());
+            return { id: c?.maTP || String(idx), ten: name.trim(), hinh: c?.hinhAnh || '', status: 'Bình thường', moTaLoi: '', phiHuHong: 0 };
+          }),
+        });
+      }
+      setLoading(false);
+    };
+    fetchOrderData();
   }, [maDon]);
 
   const formatNgay = (dateStr: string) => {
@@ -71,9 +72,9 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
     }));
   };
 
-  const tinhPhiTraTre = () => {
+  const tinhPhiTraTre = async () => {
     if (!data) return 0;
-    const penalty = penaltyStore.get();
+    const penalty = await penaltyStore.get();
     if (!penalty.trangThaiApDung) return 0;
     const han = new Date(data.hanTra);
     const thuc = new Date(ngayTraThucTe);
@@ -82,23 +83,21 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
     return diffDays > 0 ? diffDays * (data.tongGiaTriDon * rate) : 0;
   };
 
-  const phiTraTre = tinhPhiTraTre();
+  const [phiTraTre, setPhiTraTre] = useState(0);
+  useEffect(() => { tinhPhiTraTre().then(setPhiTraTre); }, [data, ngayTraThucTe]);
   const tongPhiHuHong = data?.trangPhuc.reduce((sum: number, i: any) => sum + i.phiHuHong, 0) || 0;
   const tongPhatSinh = tongPhiHuHong + phiTraTre;
   const ketQua = data ? data.tongGiaTriDon + tongPhatSinh - data.khachHang.tienCocSo : 0;
 
-  const handleComplete = () => {
-    orderStore.updateStatus(data.maDon, 'Đã trả');
-    data.trangPhuc.forEach((item: any) => {
-      costumeStore.update(item.id, {
+  const handleComplete = async () => {
+    await orderStore.updateStatus(data.maDon, 'Đã trả');
+    for (const item of data.trangPhuc) {
+      await costumeStore.update(item.id, {
         trangThai: item.status === 'Bình thường' ? 'Sẵn sàng' : item.status === 'Mất' ? 'Ngưng sử dụng' : 'Hư hỏng',
       });
-    });
+    }
     setAlertMsg('Xử lý trả đồ thành công!');
-    setTimeout(() => {
-      if (onClose) onClose();
-      else navigate('/don-thue');
-    }, 1500);
+    setTimeout(() => { if (onClose) onClose(); else navigate('/don-thue'); }, 1500);
   };
 
   const card = { backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '24px', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' };

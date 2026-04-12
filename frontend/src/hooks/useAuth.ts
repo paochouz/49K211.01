@@ -18,7 +18,6 @@ export function isOwner(): boolean {
   const v = (getUser()?.vaiTro ?? '').toLowerCase().replace(/\s/g, '');
   return v === 'chucuahang' || v === 'chủcửahàng' || v === 'owner' || v === 'admin';
 }
-
 export function isLoggedIn(): boolean {
   return getUser() !== null;
 }

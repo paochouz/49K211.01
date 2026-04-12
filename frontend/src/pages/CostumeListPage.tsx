@@ -1,11 +1,11 @@
-﻿import { useState, useMemo, type CSSProperties } from "react";
+﻿import { useState, useMemo, useEffect, type CSSProperties } from "react";
 import Menu from "./Menu";
 import { isOwner } from "../hooks/useAuth";
 import AlertModal from "../components/AlertModal";
 import ConfirmModal from "../components/ConfirmModal";
 import AddCostumeModal from "../components/AddCostumeModal";
 import UpdateTrangphuc from "./UpdateTrangphuc";
-import { costumeStore, orderStore } from "../mock/mockStore";
+import { costumeStore, orderStore } from "../services/supabaseStore";
 
 const STATUS = {
   READY: "Sẵn sàng",
@@ -40,6 +40,15 @@ export default function CostumeListPage() {
   const [alertMsg, setAlertMsg] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [rentalInfo, setRentalInfo] = useState<{customer:string;dueDate:string}|null>(null);
+
+  useEffect(() => {
+    if (selected && (selected.status === "Đang thuê" || (selected.status as string) === "Trễ hạn")) {
+      orderStore.getRentalInfo(selected.name).then(setRentalInfo);
+    } else {
+      setRentalInfo(null);
+    }
+  }, [selected]);
   const mapCostume = (c: any) => ({
     id: c.maTP, name: c.tenTP, price: c.giaThue,
     size: c.moTa ? `Size ${c.size} - ${c.moTa}` : `Size ${c.size}`,
@@ -47,16 +56,19 @@ export default function CostumeListPage() {
     image: c.hinhAnh, renter: undefined, returnDate: undefined,
   });
 
-  const [costumes, setCostumes] = useState<CostumeItem[]>(() =>
-    costumeStore.list().map(mapCostume)
-  );
+  const [costumes, setCostumes] = useState<CostumeItem[]>([]);
 
   const owner = isOwner();
 
-  const refreshCostumes = () => setCostumes(costumeStore.list().map(mapCostume));
+  const refreshCostumes = async () => {
+    const data = await costumeStore.list();
+    setCostumes(data.map(mapCostume));
+  };
 
-  const handleDelete = (id: string) => {
-    costumeStore.delete(id);
+  useEffect(() => { refreshCostumes(); }, []);
+
+  const handleDelete = async (id: string) => {
+    await costumeStore.delete(id);
     setSelected(null);
     setConfirmDelete(null);
     refreshCostumes();
@@ -162,14 +174,11 @@ export default function CostumeListPage() {
               </div>
 
               {/* Lịch đang thuê */}
-              {(selected.status === "Đang thuê" || (selected.status as string) === "Trễ hạn") && (() => {
-                const info = orderStore.getRentalInfo(selected.name);
-                return info ? (
-                  <div style={{ backgroundColor: "#fef3c7", padding: "12px 14px", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
-                    <b>Lịch đang thuê:</b> Khách đang thuê: {info.customer} – Hạn trả: {info.dueDate}
-                  </div>
-                ) : null;
-              })()}
+              {(selected.status === "Đang thuê" || (selected.status as string) === "Trễ hạn") && rentalInfo && (
+                <div style={{ backgroundColor: "#fef3c7", padding: "12px 14px", borderRadius: 10, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
+                  <b>Lịch đang thuê:</b> Khách đang thuê: {rentalInfo.customer} – Hạn trả: {rentalInfo.dueDate}
+                </div>
+              )}
 
               {/* Buttons */}
               {owner && (

@@ -1,6 +1,5 @@
 // ============================================================
-// MOCK STORE — tất cả data chỉ tồn tại trong memory
-// Reset về data mẫu khi refresh trang
+// MOCK STORE — data lưu vào localStorage, không mất khi refresh
 // ============================================================
 
 export type Customer = {
@@ -47,14 +46,14 @@ export type PenaltyConfig = {
 
 // ---- SEED DATA ----
 
-const customers: Customer[] = [
+const SEED_CUSTOMERS: Customer[] = [
   { maKH: 'KH000001', tenKH: 'Nguyễn Văn An', soDienThoai: '0912345678', diaChi: '123 Lê Lợi, TP.HCM' },
   { maKH: 'KH000002', tenKH: 'Trần Thị Bình', soDienThoai: '0987654321', diaChi: '45 Nguyễn Huệ, Hà Nội' },
   { maKH: 'KH000003', tenKH: 'Lê Minh Châu', soDienThoai: '0909111222', diaChi: '78 Trần Phú, Đà Nẵng' },
   { maKH: 'KH000004', tenKH: 'Phạm Ngọc Ánh', soDienThoai: '0933222111', diaChi: '' },
 ];
 
-const costumes: Costume[] = [
+const SEED_COSTUMES: Costume[] = [
   { maTP: 'TP000001', tenTP: 'Áo dài truyền thống', loaiTP: 'Áo dài', giaThue: 150000, size: 'M', moTa: 'Áo dài lụa cao cấp', hinhAnh: '/images/ao_dai.png', trangThai: 'Sẵn sàng' },
   { maTP: 'TP000002', tenTP: 'Vest nam lịch lãm', loaiTP: 'Vest', giaThue: 200000, size: 'L', moTa: 'Vest đen sang trọng', hinhAnh: '/images/vest.jpeg', trangThai: 'Đang thuê' },
   { maTP: 'TP000003', tenTP: 'Váy dạ hội đỏ', loaiTP: 'Váy dạ hội', giaThue: 300000, size: 'S', moTa: 'Váy dạ hội đỏ rực', hinhAnh: '/images/vay_da_hoi.jpg', trangThai: 'Đang thuê' },
@@ -63,18 +62,47 @@ const costumes: Costume[] = [
   { maTP: 'TP000006', tenTP: 'Vest nữ trắng', loaiTP: 'Vest', giaThue: 220000, size: 'M', moTa: 'Vest nữ màu trắng thanh lịch', hinhAnh: '/images/vest_nu.jpg', trangThai: 'Đang thuê' },
 ];
 
-const orders: Order[] = [
+const SEED_ORDERS: Order[] = [
   { id: '1', invoiceNo: 'HDT000001', customer: 'Nguyễn Văn An', phone: '0912345678', item: 'Vest nam lịch lãm', rentedAt: '13/04/2026', dueDate: '20/04/2026', status: 'Đang thuê', deposit: '200.000đ', total: '600.000đ' },
   { id: '2', invoiceNo: 'HDT000002', customer: 'Trần Thị Bình', phone: '0987654321', item: 'Áo dài truyền thống', rentedAt: '18/04/2026', dueDate: '26/04/2026', status: 'Chưa cọc đơn', deposit: '0đ', total: '450.000đ' },
   { id: '3', invoiceNo: 'HDT000003', customer: 'Lê Minh Châu', phone: '0909111222', item: 'Váy dạ hội đỏ', rentedAt: '01/04/2026', dueDate: '08/04/2026', status: 'Trễ hạn', deposit: '300.000đ', total: '900.000đ' },
   { id: '4', invoiceNo: 'HDT000004', customer: 'Phạm Ngọc Ánh', phone: '0933222111', item: 'Vest nữ trắng', rentedAt: '13/04/2026', dueDate: '22/04/2026', status: 'Đang thuê', deposit: '0đ', total: '440.000đ', hinhThucCoc: 'Giấy tờ tùy thân', chiTietCoc: 'CCCD - 079204012345', ghiChuGiayTo: 'CCCD - 079204012345' },
 ];
 
-let penaltyConfig: PenaltyConfig = {
+const SEED_PENALTY: PenaltyConfig = {
   tyLePhatQuaHan: 10,
   moTaQuyDinh: 'Phí phạt 10%/ngày trên tổng giá trị đơn thuê.',
   trangThaiApDung: true,
 };
+
+// ---- LOCALSTORAGE HELPERS ----
+
+const KEYS = {
+  customers: 'mock_customers',
+  costumes: 'mock_costumes',
+  orders: 'mock_orders',
+  penalty: 'mock_penalty',
+};
+
+function load<T>(key: string, seed: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch { /* ignore */ }
+  localStorage.setItem(key, JSON.stringify(seed));
+  return seed;
+}
+
+function save(key: string, data: unknown) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+// ---- INIT ----
+
+const customers = load<Customer[]>(KEYS.customers, SEED_CUSTOMERS);
+const costumes = load<Costume[]>(KEYS.costumes, SEED_COSTUMES);
+const orders = load<Order[]>(KEYS.orders, SEED_ORDERS);
+let penaltyConfig = load<PenaltyConfig>(KEYS.penalty, SEED_PENALTY);
 
 // ---- HELPERS ----
 
@@ -89,7 +117,10 @@ function nextCode(prefix: string, list: { [k: string]: string }[], key: string):
 export const customerStore = {
   list: () => [...customers],
   nextCode: () => nextCode('KH', customers as any, 'maKH'),
-  create: (c: Customer) => { customers.push(c); },
+  create: (c: Customer) => {
+    customers.push(c);
+    save(KEYS.customers, customers);
+  },
 };
 
 // ---- COSTUME API ----
@@ -100,15 +131,22 @@ export const costumeStore = {
   create: (c: Omit<Costume, 'maTP'>) => {
     const maTP = nextCode('TP', costumes as any, 'maTP');
     costumes.push({ ...c, maTP });
+    save(KEYS.costumes, costumes);
     return maTP;
   },
   update: (maTP: string, patch: Partial<Costume>) => {
     const idx = costumes.findIndex((c) => c.maTP === maTP);
-    if (idx !== -1) costumes[idx] = { ...costumes[idx], ...patch };
+    if (idx !== -1) {
+      costumes[idx] = { ...costumes[idx], ...patch };
+      save(KEYS.costumes, costumes);
+    }
   },
   delete: (maTP: string) => {
     const idx = costumes.findIndex((c) => c.maTP === maTP);
-    if (idx !== -1) costumes.splice(idx, 1);
+    if (idx !== -1) {
+      costumes.splice(idx, 1);
+      save(KEYS.costumes, costumes);
+    }
   },
 };
 
@@ -123,16 +161,23 @@ export const orderStore = {
       const c = costumes.find((c) => c.tenTP === name);
       if (c) c.trangThai = 'Đang thuê';
     });
+    save(KEYS.orders, orders);
+    save(KEYS.costumes, costumes);
   },
   updateStatus: (invoiceNo: string, status: OrderStatus) => {
     const o = orders.find((o) => o.invoiceNo === invoiceNo);
-    if (o) o.status = status;
+    if (o) {
+      o.status = status;
+      save(KEYS.orders, orders);
+    }
   },
   update: (invoiceNo: string, patch: Partial<Order>) => {
     const idx = orders.findIndex((o) => o.invoiceNo === invoiceNo);
-    if (idx !== -1) orders[idx] = { ...orders[idx], ...patch };
+    if (idx !== -1) {
+      orders[idx] = { ...orders[idx], ...patch };
+      save(KEYS.orders, orders);
+    }
   },
-  // Lấy thông tin thuê của 1 trang phục (nếu đang thuê)
   getRentalInfo: (tenTP: string) => {
     const order = orders.find(
       (o) => (o.status === 'Đang thuê' || o.status === 'Trễ hạn') &&
@@ -147,7 +192,10 @@ export const orderStore = {
 
 export const penaltyStore = {
   get: () => ({ ...penaltyConfig }),
-  save: (cfg: PenaltyConfig) => { penaltyConfig = { ...cfg }; },
+  save: (cfg: PenaltyConfig) => {
+    penaltyConfig = { ...cfg };
+    save(KEYS.penalty, penaltyConfig);
+  },
 };
 
 // ---- AUTH ----

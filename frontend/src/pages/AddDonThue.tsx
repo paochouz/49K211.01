@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 import type { OrderItem } from "./DonThue";
 import type { OrderStatus } from "./DonThue";
-import { orderStore, customerStore, costumeStore } from "../mock/mockStore";
+import { orderStore, customerStore, costumeStore } from "../services/supabaseStore";
+import type { Costume as SupabaseCostume } from "../services/supabaseStore";
 
 type Customer = {
   maKH: string;
@@ -9,7 +11,7 @@ type Customer = {
   soDienThoai: string;
 };
 
-type Costume = {
+type LocalCostume = {
   id: string;
   tenTP: string;
   size: string;
@@ -86,9 +88,6 @@ function calcDaysInclusiveDDMMYYYY(startStr: string, endStr: string) {
   return days <= 0 ? 1 : days;
 }
 
-function generateCustomerId() {
-  return customerStore.nextCode();
-}
 
 function DateField({
   value,
@@ -268,25 +267,32 @@ function DateField({
 }
 
 export default function AddDonThue({ onClose, initialData, onSuccess }: { onClose?: () => void; initialData?: OrderItem; onSuccess?: () => void }) {
-  const isEditMode = !!initialData;
+  const location = useLocation();
+  const routeInitialData = (location.state as { initialData?: OrderItem } | null)?.initialData;
+  const resolvedInitialData = initialData ?? routeInitialData;
+  const isEditMode = !!resolvedInitialData;
   // Chỉ cho chỉnh sửa khi đơn ở trạng thái "Chưa cọc đơn"
-  const isLocked = isEditMode && initialData?.status !== 'Chưa cọc đơn';
+  const isLocked = isEditMode && resolvedInitialData?.status !== 'Chưa cọc đơn';
   const minDateISO = useMemo(() => todayISO(), []);
   const minDateStr = useMemo(() => todayDDMMYYYY(), []);
 
-  const [customers, setCustomers] = useState<Customer[]>(() => customerStore.list().map(c => ({ maKH: c.maKH, tenKH: c.tenKH, soDienThoai: c.soDienThoai })));
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    customerStore.list().then(list =>
+      setCustomers(list.map(c => ({ maKH: c.maKH, tenKH: c.tenKH, soDienThoai: c.soDienThoai })))
+    );
+  }, []);
 
   // Pre-fill customer từ initialData nếu có
   const initialCustomer = useMemo<Customer | undefined>(() => {
-    if (!initialData) return undefined;
-    return (
-      customerStore.list().find((c) => c.soDienThoai === initialData.phone) ?? {
-        maKH: "KH000000",
-        tenKH: initialData.customer,
-        soDienThoai: initialData.phone,
-      }
-    );
-  }, [initialData]);
+    if (!resolvedInitialData) return undefined;
+    return {
+      maKH: "KH000000",
+      tenKH: resolvedInitialData.customer,
+      soDienThoai: resolvedInitialData.phone,
+    };
+  }, [resolvedInitialData]);
 
   const [form, setForm] = useState<{
     maDon: string;
@@ -297,33 +303,18 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     trangThai: string;
     ghiChuGiayTo: string;
   }>(() => ({
-    maDon: initialData?.invoiceNo ?? "",
+    maDon: resolvedInitialData?.invoiceNo ?? "",
     invoiceNumber: 0,
     khachHang: initialCustomer,
-    hinhThucCoc: (initialData as any)?.hinhThucCoc === 'Giấy tờ tùy thân' ? "GIAY_TO" : "TIEN_MAT_CHUYEN_KHOAN",
-    tienCoc: initialData ? Number(initialData.deposit.replace(/[^\d]/g, "")) : 0,
-    trangThai: initialData?.status ?? "Chưa cọc đơn",
-    ghiChuGiayTo: (initialData as any)?.ghiChuGiayTo || "",
+    hinhThucCoc: (resolvedInitialData as any)?.hinhThucCoc === 'Giấy tờ tùy thân' ? "GIAY_TO" : "TIEN_MAT_CHUYEN_KHOAN",
+    tienCoc: resolvedInitialData ? Number(resolvedInitialData.deposit.replace(/[^\d]/g, "")) : 0,
+    trangThai: resolvedInitialData?.status ?? "Chưa cọc đơn",
+    ghiChuGiayTo: (resolvedInitialData as any)?.ghiChuGiayTo || "",
   }));
 
   const [tienCocTouched, setTienCocTouched] = useState(false);
 
-  const [items, setItems] = useState<RentItem[]>(() => {
-    if (!initialData) return [];
-    const names = initialData.item.split(', ').map(n => n.trim()).filter(Boolean);
-    return names.map((name) => {
-      const costume = costumeStore.list().find(c => c.tenTP === name);
-      return {
-        id: String(Date.now() + Math.random()),
-        costumeId: costume?.maTP,
-        tenTP: name,
-        size: costume?.size || "",
-        donGia: costume?.giaThue || 0,
-        ngayThue: initialData.rentedAt,
-        ngayTra: initialData.dueDate,
-      };
-    });
-  });
+  const [items, setItems] = useState<RentItem[]>(() => []);
 
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -340,10 +331,10 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
   const [customerCreateIsError, setCustomerCreateIsError] = useState(false);
   const [customerCreateLoading, setCustomerCreateLoading] = useState(false);
 
-  // Auto mã đơn từ mock store
+  // Auto mã đơn từ Supabase
   useEffect(() => {
     if (isEditMode) return;
-    setForm((prev) => ({ ...prev, maDon: orderStore.nextCode(), invoiceNumber: 0 }));
+    orderStore.nextCode().then(code => setForm((prev) => ({ ...prev, maDon: code, invoiceNumber: 0 })));
   }, [isEditMode]);
 
   const derived = useMemo(() => {
@@ -389,9 +380,37 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     });
   }, [customerKeyword, customers]);
 
-  const mockCostumes = costumeStore.list()
-    .filter(c => c.trangThai === 'Sẵn sàng')
-    .map(c => ({ id: c.maTP, tenTP: c.tenTP, size: c.size, donGia: c.giaThue }));
+  const [allCostumes, setAllCostumes] = useState<SupabaseCostume[]>([]);
+  const [mockCostumes, setMockCostumes] = useState<LocalCostume[]>([]);
+
+  useEffect(() => {
+    costumeStore.list().then(list => {
+      setAllCostumes(list);
+      console.log('mapped list:', list.map(c => ({tenTP: c.tenTP, trangThai: c.trangThai})));
+      setMockCostumes(
+        list
+          .filter(c => c.trangThai === 'Sẵn sàng')
+          .map(c => ({ id: c.maTP, tenTP: c.tenTP, size: c.size, donGia: c.giaThue }))
+      );
+    }).catch(console.error);
+  }, [isCostumeModalOpenFor]);
+
+  useEffect(() => {
+    if (!resolvedInitialData || allCostumes.length === 0) return;
+    const names = resolvedInitialData.item.split(', ').map(n => n.trim()).filter(Boolean);
+    setItems(names.map((name) => {
+      const costume = allCostumes.find((c) => c.tenTP === name);
+      return {
+        id: String(Date.now() + Math.random()),
+        costumeId: costume?.maTP,
+        tenTP: name,
+        size: costume?.size || "",
+        donGia: costume?.giaThue || 0,
+        ngayThue: resolvedInitialData.rentedAt,
+        ngayTra: resolvedInitialData.dueDate,
+      };
+    }));
+  }, [resolvedInitialData, allCostumes]);
 
   const filteredCostumes = useMemo(() => {
     const kw = costumeKeyword.trim().toLowerCase();
@@ -400,7 +419,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
       const full = `${c.tenTP} ${c.size} ${c.id}`.toLowerCase();
       return full.includes(kw);
     });
-  }, [costumeKeyword]);
+  }, [costumeKeyword, mockCostumes]);
 
   const addItem = () => {
     const id = String(Date.now());
@@ -444,7 +463,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     setIsCostumeModalOpenFor(itemId);
   };
 
-  const selectCostumeForItem = (itemId: string, costume: Costume) => {
+  const selectCostumeForItem = (itemId: string, costume: LocalCostume) => {
     // Kiểm tra trang phục đã được chọn ở item khác chưa
     const alreadySelected = items.some(i => i.id !== itemId && i.costumeId === costume.id);
     if (alreadySelected) return; // bỏ qua nếu trùng
@@ -488,23 +507,37 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
     }
 
     if (isEditMode) {
-      orderStore.update(form.maDon, {
-        customer: form.khachHang!.tenKH,
-        phone: form.khachHang!.soDienThoai,
-        item: items.map((it) => it.tenTP).join(', '),
-        rentedAt: items[0]?.ngayThue || '',
-        dueDate: items[items.length - 1]?.ngayTra || '',
-        deposit: `${form.tienCoc.toLocaleString('vi-VN')}đ`,
-        total: `${derived.tongDonThue.toLocaleString('vi-VN')}đ`,
-        status: form.trangThai as OrderStatus,
-      });
-      setMessage("Cập nhật đơn thành công!");
-      onSuccess?.();
-      return;
+      try {
+        const detailItems = items.every((it) => !!it.costumeId)
+          ? items.map((it) => ({ matp: it.costumeId!, ngaythue: it.ngayThue, ngaytradukien: it.ngayTra }))
+          : undefined;
+
+        await orderStore.update(form.maDon, {
+          customer: form.khachHang!.tenKH,
+          phone: form.khachHang!.soDienThoai,
+          item: items.map((it) => it.tenTP).join(', '),
+          rentedAt: items[0]?.ngayThue || '',
+          dueDate: items[items.length - 1]?.ngayTra || '',
+          deposit: `${form.tienCoc.toLocaleString('vi-VN')}đ`,
+          total: `${derived.tongDonThue.toLocaleString('vi-VN')}đ`,
+          status: form.trangThai as OrderStatus,
+          hinhThucCoc: form.hinhThucCoc === 'GIAY_TO' ? 'Giấy tờ tùy thân' : 'Tiền mặt/chuyển khoản',
+          ghiChuGiayTo: form.ghiChuGiayTo,
+          detailItems,
+        });
+        setMessage("Cập nhật đơn thành công!");
+        onSuccess?.();
+        return;
+      } catch (err: any) {
+        console.error(err);
+        setIsError(true);
+        setMessage(err?.message || "Cập nhật đơn thất bại");
+        return;
+      }
     }
 
     try {
-      orderStore.create({
+      await orderStore.create({
         invoiceNo: form.maDon,
         customer: form.khachHang!.tenKH,
         phone: form.khachHang!.soDienThoai,
@@ -540,7 +573,9 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                   setCustomerCreateMessage("");
                   setCustomerCreateIsError(false);
                   setCustomerCreateLoading(false);
-                  setNewCustomer({ maKH: generateCustomerId(), tenKH: "", soDienThoai: "", diaChi: "" });
+                  customerStore.nextCode().then(code => {
+                    setNewCustomer({ maKH: code, tenKH: "", soDienThoai: "", diaChi: "" });
+                  });
                   setCustomerMode("CREATE");
                   setIsCustomerModalOpen(true);
                 }}
@@ -741,7 +776,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
 
           {isLocked && (
             <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fcd34d', fontSize: 13, color: '#92400e', marginBottom: 8 }}>
-              Đơn thuê ở trạng thái <b>{initialData?.status}</b> — không thể chỉnh sửa.
+              Đơn thuê ở trạng thái <b>{resolvedInitialData?.status}</b> — không thể chỉnh sửa.
             </div>
           )}
 
@@ -919,7 +954,7 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                           return;
                         }
 
-                        const isDuplicate = customerStore.list().some(c => c.soDienThoai === soDienThoai);
+                        const isDuplicate = customers.some(c => c.soDienThoai === soDienThoai);
                         if (isDuplicate) {
                           setCustomerCreateIsError(true);
                           setCustomerCreateMessage("Số điện thoại đã tồn tại trong hệ thống");
@@ -927,18 +962,17 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
                         }
 
                         setCustomerCreateLoading(true);
-                        setTimeout(() => {
-                          const created: Customer = { maKH: newCustomer.maKH || generateCustomerId(), tenKH, soDienThoai };
-                          customerStore.create({ maKH: created.maKH, tenKH: created.tenKH, soDienThoai: created.soDienThoai, diaChi: '' });
+                        customerStore.nextCode().then(async (code) => {
+                          const created: Customer = { maKH: newCustomer.maKH || code, tenKH, soDienThoai };
+                          await customerStore.create({ maKH: created.maKH, tenKH: created.tenKH, soDienThoai: created.soDienThoai, diaChi: '' });
                           setCustomers((prev) => [created, ...prev]);
                           setForm((p) => ({ ...p, khachHang: created }));
-
                           setCustomerCreateLoading(false);
                           setIsCustomerModalOpen(false);
                           setCustomerMode("SELECT");
                           setCustomerCreateMessage("");
                           setCustomerCreateIsError(false);
-                        }, 300);
+                        });
                       }}
                     >
                       {customerCreateLoading ? "Đang lưu..." : "Lưu"}
