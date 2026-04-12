@@ -181,7 +181,7 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
                       </select>
                       <input placeholder="Ghi chú lỗi" value={item.moTaLoi} disabled={item.status === 'Bình thường'} onChange={(e) => handleMoTaLoiChange(item.id, e.target.value)} style={{ height: '40px', flex: 1, padding: '0 12px', borderRadius: '8px', border: '1px solid #E5E7EB' }} />
                       <div style={{ position: 'relative' }}>
-                        <input value={item.phiHuHong > 0 ? item.phiHuHong.toLocaleString() : ''} disabled={item.status === 'Bình thường'} onChange={(e) => handlePhiHuHongChange(item.id, e.target.value)} style={{ height: '40px', width: '130px', textAlign: 'right', padding: '0 45px 0 12px', borderRadius: '8px', border: '1px solid #E5E7EB', fontWeight: 'bold' }} />
+                        <input value={item.phiHuHong > 0 ? item.phiHuHong : ''} disabled={item.status === 'Bình thường'} onChange={(e) => handlePhiHuHongChange(item.id, e.target.value)} style={{ height: '40px', width: '130px', textAlign: 'right', padding: '0 45px 0 12px', borderRadius: '8px', border: '1px solid #E5E7EB', fontWeight: 'bold' }} />
                         <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', fontWeight: 'bold', color: '#64748B' }}>VNĐ</span>
                       </div>
                     </div>

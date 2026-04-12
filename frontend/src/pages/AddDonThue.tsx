@@ -742,13 +742,17 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
           <div style={groupStyle}>
             <label style={labelStyle}>Tiền cọc *</label>
             <input
-              type="number"
-              value={form.tienCoc}
+              type="text"
+              value={form.tienCoc === 0 ? '' : form.tienCoc}
               disabled={form.hinhThucCoc === "GIAY_TO" || isLocked}
               onChange={(e) => {
-                setTienCocTouched(true);
-                setForm((p) => ({ ...p, tienCoc: Number(e.target.value) || 0 }));
+                const val = e.target.value;
+                if (val === '' || /^\d+$/.test(val)) {
+                  setTienCocTouched(true);
+                  setForm((p) => ({ ...p, tienCoc: val === '' ? 0 : Number(val) }));
+                }
               }}
+              placeholder="0"
               style={{ ...inputStyle, ...((form.hinhThucCoc === "GIAY_TO" || isLocked) ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed' } : {}) }}
             />
           </div>
