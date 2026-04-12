@@ -4,9 +4,9 @@ import Menu from './Menu';
 import type { Order } from '../services/supabaseStore';
 import { orderStore } from '../services/supabaseStore';
 
-type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
+export type OrderStatus = 'Chưa cọc đơn' | 'Đang thuê' | 'Đã trả' | 'Trễ hạn';
 
-type OrderItem = Order;
+export type OrderItem = Order;
 
 type StatusBadgeProps = {
   status: OrderStatus;

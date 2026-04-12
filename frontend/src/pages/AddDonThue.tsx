@@ -397,8 +397,11 @@ export default function AddDonThue({ onClose, initialData, onSuccess }: { onClos
 
   useEffect(() => {
     if (!resolvedInitialData || allCostumes.length === 0) return;
-    const names = resolvedInitialData.item.split(', ').map(n => n.trim()).filter(Boolean);
-    setItems(names.map((name) => {
+    const names = resolvedInitialData.item
+      .split(', ')
+      .map((n: string) => n.trim())
+      .filter(Boolean);
+    setItems(names.map((name: string) => {
       const costume = allCostumes.find((c) => c.tenTP === name);
       return {
         id: String(Date.now() + Math.random()),
