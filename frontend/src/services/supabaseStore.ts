@@ -14,7 +14,11 @@ function nextCode(prefix: string, list: string[]): string {
 
 function formatDate(d: string | null): string {
   if (!d) return '';
+  // Xử lý format dd/MM/yyyy từ DB
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+  // Xử lý format yyyy-MM-dd hoặc ISO
   const dt = new Date(d);
+  if (isNaN(dt.getTime())) return d; // trả nguyên nếu không parse được
   const dd = String(dt.getDate()).padStart(2, '0');
   const mm = String(dt.getMonth() + 1).padStart(2, '0');
   const yyyy = dt.getFullYear();
@@ -447,15 +451,28 @@ export const orderStore = {
       }
     }
   },
-  getRentalInfo: async (tenTP: string) => {
-    const { data: tp } = await supabase.from('trangphuc').select('matp').eq('tentp', tenTP).maybeSingle();
-    if (!tp) return null;
-    const { data: detail } = await supabase.from('chitietdonthue').select('madon, ngaytradukien').eq('matp', tp.matp).maybeSingle();
-    if (!detail) return null;
-    const { data: order } = await supabase.from('donthue').select('makh, trangthaidon').eq('madon', detail.madon).maybeSingle();
-    if (!order || !['Đang thuê', 'Trễ hạn'].includes(order.trangthaidon)) return null;
-    const { data: kh } = await supabase.from('khachhang').select('tenkh').eq('makh', order.makh).maybeSingle();
-    return { customer: kh?.tenkh || '', dueDate: formatDate(detail.ngaytradukien) };
+  getRentalInfo: async (maTP: string) => {
+    // Lấy tất cả chi tiết đơn thuê của trang phục này
+    const { data: details } = await supabase
+      .from('chitietdonthue')
+      .select('madon, ngaytradukien')
+      .eq('matp', maTP);
+    if (!details || details.length === 0) return null;
+
+    // Tìm đơn đang active trong số đó
+    for (const detail of details) {
+      const { data: order } = await supabase
+        .from('donthue')
+        .select('makh, khachhang(tenkh)')
+        .eq('madon', detail.madon)
+        .in('trangthaidon', ['Dang thue', 'Tre han', 'Đang thuê', 'Trễ hạn'])
+        .maybeSingle();
+      if (order) {
+        const tenkh = (order.khachhang as any)?.tenkh || '';
+        return { customer: tenkh, dueDate: formatDate(detail.ngaytradukien) };
+      }
+    }
+    return null;
   },
 };
 
@@ -464,7 +481,8 @@ export const penaltyStore = {
   get: async (): Promise<PenaltyConfig> => {
     const { data } = await supabase.from('cauhinhphat').select('*').limit(1).maybeSingle();
     if (!data) return { tyLePhatQuaHan: 10, moTaQuyDinh: '', trangThaiApDung: true };
-    return { tyLePhatQuaHan: Number(data.tylephatquahan || data.tylephat || 10), moTaQuyDinh: data.motaquydinh || '', trangThaiApDung: data.trangthaiapdung ?? true };
+    const tyLePhat = data.tylephatquahan !== null && data.tylephatquahan !== undefined ? Number(data.tylephatquahan) : (data.tylephat !== null && data.tylephat !== undefined ? Number(data.tylephat) : 10);
+    return { tyLePhatQuaHan: tyLePhat, moTaQuyDinh: data.motaquydinh || '', trangThaiApDung: data.trangthaiapdung ?? true };
   },
   save: async (cfg: PenaltyConfig) => {
     const { data: existing } = await supabase.from('cauhinhphat').select('*').limit(1).maybeSingle();

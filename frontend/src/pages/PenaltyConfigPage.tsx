@@ -40,9 +40,9 @@ const PenaltyConfigPage = () => {
             <div style={{ position: 'relative' }}>
               <input
                 type="number"
-                value={config.tyLePhatQuaHan === 0 ? '' : config.tyLePhatQuaHan}
+                value={config.tyLePhatQuaHan}
                 onChange={(e) =>
-                  setConfig({ ...config, tyLePhatQuaHan: e.target.value === '' ? 0 : Number(e.target.value) })
+                  setConfig({ ...config, tyLePhatQuaHan: Number(e.target.value) })
                 }
                 placeholder="0"
                 style={inputStyle}
