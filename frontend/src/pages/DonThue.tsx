@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AddDonThue from './AddDonThue';
 import Menu from './Menu';
 import type { Order } from '../services/supabaseStore';
@@ -13,6 +14,7 @@ type StatusBadgeProps = {
 };
 
 export default function RentalOrdersPage() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
@@ -266,9 +268,10 @@ export default function RentalOrdersPage() {
                   <button
                     type="button"
                     disabled={order.status !== 'Đang thuê' && order.status !== 'Trễ hạn'}
+                    onClick={() => navigate(`/costume-returns/${order.invoiceNo}`)}
                     className={`rounded-xl px-3 py-2 text-xs font-medium ${
                       order.status === 'Đang thuê' || order.status === 'Trễ hạn'
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-emerald-100 text-emerald-700 cursor-pointer'
                         : 'cursor-not-allowed bg-slate-200 text-slate-400'
                     }`}
                   >

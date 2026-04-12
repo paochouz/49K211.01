@@ -30,6 +30,23 @@ function parseNumericValue(value: any): number {
   return Number(value) || 0;
 }
 
+async function getActiveRentedMatps(): Promise<Set<string>> {
+  const [{ data: details }, { data: orders }] = await Promise.all([
+    supabase.from('chitietdonthue').select('matp, madon'),
+    supabase.from('donthue').select('madon, trangthaidon'),
+  ]);
+  const activeOrderIds = new Set(
+    (orders || [])
+      .filter((o: any) => ['Đang thuê', 'Trễ hạn'].includes((o.trangthaidon || '').trim()))
+      .map((o: any) => o.madon),
+  );
+  return new Set(
+    (details || [])
+      .filter((d: any) => activeOrderIds.has(d.madon))
+      .map((d: any) => d.matp),
+  );
+}
+
 function mapStatus(raw: string): OrderStatus {
   const v = (raw || '').trim();
   if (v === 'Đang thuê') return 'Đang thuê';
@@ -71,6 +88,7 @@ export const customerStore = {
 export const costumeStore = {
   list: async (): Promise<Costume[]> => {
     const { data, error } = await supabase.from('trangphuc').select('*').order('matp');
+    const activeRentedMatps = await getActiveRentedMatps();
     console.log('trangphuc data:', data, 'error:', error);
     return (data || []).map((r: any) => ({
       maTP: r.matp,
@@ -80,7 +98,7 @@ export const costumeStore = {
       size: r.size || '',
       moTa: r.mota || '',
       hinhAnh: r.hinhanh || '',
-      trangThai: r.trangthai || 'Sẵn sàng',
+      trangThai: activeRentedMatps.has(r.matp) ? 'Đang thuê' : (r.trangthai || 'Sẵn sàng'),
     }));
   },
   nextCode: async (): Promise<string> => {

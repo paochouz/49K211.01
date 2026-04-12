@@ -13,6 +13,7 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
   const [ngayTraThucTe, setNgayTraThucTe] = useState(new Date().toISOString().split('T')[0]);
   const [daTraGiayTo, setDaTraGiayTo] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     if (!maDon) return;
@@ -90,14 +91,21 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
   const ketQua = data ? data.tongGiaTriDon + tongPhatSinh - data.khachHang.tienCocSo : 0;
 
   const handleComplete = async () => {
-    await orderStore.updateStatus(data.maDon, 'Đã trả');
-    for (const item of data.trangPhuc) {
-      await costumeStore.update(item.id, {
-        trangThai: item.status === 'Bình thường' ? 'Sẵn sàng' : item.status === 'Mất' ? 'Ngưng sử dụng' : 'Hư hỏng',
-      });
+    try {
+      setErrorMsg('');
+      await orderStore.updateStatus(data.maDon, 'Đã trả');
+      for (const item of data.trangPhuc) {
+        if (item.id && !item.id.startsWith('TP')) continue; // Skip if not a valid maTP
+        await costumeStore.update(item.id, {
+          trangThai: item.status === 'Bình thường' ? 'Sẵn sàng' : item.status === 'Mất' ? 'Ngưng sử dụng' : 'Hư hỏng',
+        });
+      }
+      setAlertMsg('Xử lý trả đồ thành công!');
+      setTimeout(() => { if (onClose) onClose(); else navigate('/don-thue'); }, 1500);
+    } catch (err: any) {
+      console.error('Error completing return:', err);
+      setErrorMsg(err?.message || 'Có lỗi xảy ra khi xử lý trả đồ');
     }
-    setAlertMsg('Xử lý trả đồ thành công!');
-    setTimeout(() => { if (onClose) onClose(); else navigate('/don-thue'); }, 1500);
   };
 
   const card = { backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '24px', marginBottom: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' };
@@ -238,6 +246,12 @@ const CostumeReturns = ({ maDonProp, onClose }: { maDonProp?: string; onClose?: 
               </div>
             )}
           </div>
+
+          {errorMsg && (
+            <div style={{ padding: '12px 16px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', fontSize: '14px', marginBottom: '16px' }}>
+              {errorMsg}
+            </div>
+          )}
 
           {/* Footer */}
           <div style={{ padding: '16px 32px', borderTop: '1px solid #E5E7EB', backgroundColor: 'white', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
