@@ -9,10 +9,12 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@types/multer": "^2.1.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^4.22.1",
-    "mssql": "^12.2.1"
+    "mssql": "^12.2.1",
+    "multer": "^2.1.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
